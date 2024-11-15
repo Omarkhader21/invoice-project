@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Invoices\SendInvoiceController;
 use App\Http\Controllers\Invoice\InvoiceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OdbcController;
@@ -20,4 +21,5 @@ Route::middleware([
     })->name('dashboard');
 
     Route::resource('/invoice', InvoiceController::class)->only(['index', 'show']);
+    Route::post('send/invoice/{id}', [SendInvoiceController::class, 'sendInvoice'])->name('send-Invoice');
 });

@@ -30,9 +30,9 @@ class SendInvoiceController extends Controller
         // Choose the correct function based on invoice type
         $xml = null;
 
-        if ($invoiceData->invoicetypecode === '388') { // General Sales Invoice
+        if ($invoiceData->{'invoice-type'} === '388') { // General Sales Invoice
             $xml = $this->generateGeneralSalesInvoiceXml($invoiceData);
-        } elseif ($invoiceData->invoicetypecode === '381') { // Credit Invoice
+        } elseif ($invoiceData->{'invoice-type'} === '381') { // Credit Invoice
             $xml = $this->generateCreditInvoiceXml($invoiceData);
         } else {
             flash()->error("Unsupported invoice type.");

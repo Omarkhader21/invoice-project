@@ -21,7 +21,12 @@ class SendInvoiceController extends Controller
     public function sendInvoice($id)
     {
         // Fetch invoice data
-        $invoiceData = DB::connection(name: "odbc")->select("SELECT * FROM [fawtara-01] WHERE [uuid] = ?", [$id]);
+        $invoiceData = DB::connection('odbc')->select("SELECT * FROM [fawtara-01] WHERE [uuid] = ? AND [sent-to-fawtara] = 0", [$id]);
+
+        if (empty($invoiceData)) {
+            flash()->error("Invoice not found or already sent.");
+            return redirect()->back();
+        }
 
         if (empty($invoiceData)) {
             flash()->error("The invoice does not exist.");
@@ -52,10 +57,14 @@ class SendInvoiceController extends Controller
         // Save the XML file in the correct folder
         $filePath = $this->invoiceFileService->saveInvoiceXml($xml, $folderPath, $id, $invoiceData->{'invoice-type'});
 
+        // Send the XML to the API
         $response = $this->invoiceService->sendInvoiceToApi($filePath, $invoiceData->uuid);
 
+        // Handle API response
         if ($response['status']) {
             flash()->success("Invoice successfully sent.");
+            // Fetch invoice data
+            DB::connection('odbc')->update("UPDATE [fawtara-01] SET [sent-to-fawtara] = 1 WHERE [uuid] = ?", [$id]);
         } else {
             flash()->error("Failed to send invoice: " . $response['message']);
         }

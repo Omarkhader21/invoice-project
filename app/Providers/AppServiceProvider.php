@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\OdbcConnector;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,7 +16,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register InvoiceService as a singleton
+        $this->app->singleton(\App\Services\InvoiceService::class, \App\Services\InvoiceXmlService::class);
+
+        // Register InvoiceFileService as a singleton
+        $this->app->singleton(\App\Services\InvoiceFileService::class);
     }
 
     /**

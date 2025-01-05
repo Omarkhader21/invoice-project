@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Invoice;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use App\Services\InvoiceService; // A service to handle invoice logic
@@ -47,7 +46,7 @@ class SendInvoices extends Command
     public function __construct(InvoiceService $invoiceService, InvoiceFileService $invoiceFileService)
     {
         parent::__construct();
-        $this->invoiceService = $invoiceService;
+        $this->invoiceService = $invoiceService; // This will resolve to InvoiceXmlService if injected
         $this->invoiceFileService = $invoiceFileService;
     }
 
@@ -94,6 +93,9 @@ class SendInvoices extends Command
                     // If the API call was successful, mark the invoice as 'sent'
                     $invoice->update(['sent-to-fawtara' => 1, 'status' => 'sent']);
                     $this->info('Invoice ID ' . $invoice->uuid . ' has been sent successfully.');
+
+                    // Update the 'sent-to-fawtara' field in the database
+                    DB::connection('odbc')->update("UPDATE [fawtara-01] SET [sent-to-fawtara] = 1 WHERE [uuid] = ?", [$invoice->uuid]);
                 } else {
                     // If the API call failed, log the error message
                     $this->error('Failed to send invoice ID ' . $invoice->uuid . '. Error: ' . $response['message']);

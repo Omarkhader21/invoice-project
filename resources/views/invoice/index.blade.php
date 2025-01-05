@@ -27,6 +27,10 @@
                                             </th>
                                             <th scope="col"
                                                 class="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">
+                                                Invoice Code
+                                            </th>
+                                            <th scope="col"
+                                                class="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">
                                                 Invoice Type
                                             </th>
                                             <th scope="col"
@@ -61,46 +65,53 @@
                                     </thead>
                                     <tbody class="divide-y divide-gray-200">
                                         @foreach ($paginatedInvoices as $key => $invoice)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{{
-                                                $invoice->{'uuid'} }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{
-                                                \Carbon\Carbon::parse($invoice->{'issuedate'})->format('F j, Y') }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{
-                                                $invoice->{'invoicetypecode'} }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{
-                                                $invoice->{'registrationname'} }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{
-                                                $invoice->{'amount'} }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{
-                                                $invoice->{'taxamount'} }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{
-                                                $invoice->{'taxexclusiveamount'} }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{
-                                                $invoice->{'taxinclusiveamount'} }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-center">
-                                                @if($invoice->{'sent-to-fawtara'} == '1')
-                                                <i class="fa-solid fa-circle-check text-xl text-green-700"></i>
-                                                @else
-                                                <i class="fa-solid fa-circle-xmark text-xl text-red-700"></i>
-                                                @endif
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
-                                                <a href="{{ route('invoice.show', $invoice->uuid) }}"
-                                                    class="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none px-4 py-2">
-                                                    Show
-                                                </a>
+                                            <tr>
+                                                <td
+                                                    class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                                                    {{ $invoice->{'uuid'} }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                                    {{ \Carbon\Carbon::parse($invoice->{'issuedate'})->format('F j, Y') }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                                    {{ $invoice->{'invoicetypecode'} }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                                    {{ $invoice->{'invoice-type'} }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                                    {{ $invoice->{'registrationname'} }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                                    {{ $invoice->{'amount'} }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                                    {{ $invoice->{'taxamount'} }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                                    {{ $invoice->{'taxexclusiveamount'} }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                                    {{ $invoice->{'taxinclusiveamount'} }}</td>
+                                                <td
+                                                    class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-center">
+                                                    @if ($invoice->{'sent-to-fawtara'} == '1')
+                                                        <i class="fa-solid fa-circle-check text-xl text-green-700"></i>
+                                                    @else
+                                                        <i class="fa-solid fa-circle-xmark text-xl text-red-700"></i>
+                                                    @endif
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
+                                                    <a href="{{ route('invoice.show', $invoice->uuid) }}"
+                                                        class="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none px-4 py-2">
+                                                        Show
+                                                    </a>
 
-                                                <form action="{{ route('send-Invoice', $invoice->uuid) }}" method="POST"
-                                                    class="inline-flex">
-                                                    @csrf
-                                                    <button type="submit"
-                                                        class="ml-2 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-green-500 text-white hover:bg-green-600 focus:outline-none focus:bg-green-700 px-4 py-2">
-                                                        Send
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
+                                                    @if($invoice->{'sent-to-fawtara'} == '0')
+                                                    <form action="{{ route('send-Invoice', $invoice->uuid) }}"
+                                                        method="POST" class="inline-flex">
+                                                        @csrf
+                                                        <button type="submit"
+                                                            class="ml-2 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-green-500 text-white hover:bg-green-600 focus:outline-none focus:bg-green-700 px-4 py-2">
+                                                            Send
+                                                        </button>
+                                                    </form>
+                                                    @endif
+                                                </td>
+                                            </tr>
                                         @endforeach
                                     </tbody>
                                 </table>

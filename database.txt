@@ -1,0 +1,67 @@
+CREATE TABLE `fawtara-00` (
+    `CompanyId` INT NOT NULL,
+    `suppliername` VARCHAR(255) NOT NULL,
+    `PartyIdentificationId` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`CompanyId`)
+);
+
+CREATE TABLE `fawtara-sales` (
+    `invoice_type_temp` INT,
+    `invoice_no_temp` INT,
+    `id` INT,
+    `uuid` BIGINT PRIMARY KEY,
+    `issuedate` DATE,
+    `invoicetypecode` VARCHAR(255),
+    `registrationname` VARCHAR(255),
+    `amount` DECIMAL(15, 2),
+    `taxamount` DECIMAL(15, 2),
+    `taxexclusiveamount` DECIMAL(15, 2),
+    `taxinclusiveamount` DECIMAL(15, 2),
+    `sent_to_fawtara` TINYINT(1) DEFAULT 0,
+    `invoice_type` VARCHAR(255),
+    `instruction_note` VARCHAR(255),
+    `customer_schemetype` VARCHAR(255) DEFAULT 'TN',
+    `customerno` INT
+);
+
+CREATE TABLE `fawtara-credit-sales` (
+    `invoice_type_temp` INT,
+    `invoice_no_temp` INT,
+    `id` INT,
+    `uuid` BIGINT PRIMARY KEY, -- Removed NOT NULL (but PRIMARY KEY may still enforce it implicitly)
+    `issuedate` DATE,
+    `invoicetypecode` VARCHAR(255),
+    `registrationname` VARCHAR(255),
+    `amount` DECIMAL(15, 2),
+    `taxamount` DECIMAL(15, 2),
+    `taxexclusiveamount` DECIMAL(15, 2),
+    `taxinclusiveamount` DECIMAL(15, 2),
+    `sent_to_fawtara` TINYINT(1) DEFAULT 0 CHECK (sent_to_fawtara IN (0, 1)),
+    `invoice_type` VARCHAR(255),
+    `ref_id` INT,
+    `ref_uuid` BIGINT,
+    `ref_total` BIGINT,
+    `instruction_note` VARCHAR(255),
+    `customer_schemetype` VARCHAR(255) DEFAULT 'TN',
+    `customerno` INT
+);
+
+
+CREATE TABLE `fawtara-02` (
+    `invoice_type_temp` INT,
+    `invoice_no_temp` INT,
+    `id` INT,
+    `uuid` BIGINT,
+    `linenu` INT PRIMARY KEY,  -- Removed NOT NULL (but PRIMARY KEY may still enforce it implicitly)
+    `InvoicedQuantity` INT,
+    `lineextensionamount` DECIMAL(15, 2),
+    `taxamount` DECIMAL(15, 2),
+    `percent` DECIMAL(15, 2),
+    `itemname` VARCHAR(255),
+    `sent_to_fawtara` TINYINT(1) DEFAULT 0 CHECK (sent_to_fawtara IN (0, 1)),  -- Kept DEFAULT and CHECK
+    `priceamount` DECIMAL(15, 2),
+    `amount` DECIMAL(15, 2),
+    `roundingamount` DECIMAL(15, 2),
+    `invoice_type` VARCHAR(255),
+    `invoicetypecode` VARCHAR(255)
+);

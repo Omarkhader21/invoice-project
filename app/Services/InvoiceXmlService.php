@@ -43,7 +43,7 @@ class InvoiceXmlService extends InvoiceService
                     'cac:PartyIdentification' => [
                         'cbc:ID' => [
                             '_attributes' => ['schemeID' => $invoiceData->{'customer-schemetype'}],
-                            '_value' => $invoiceData->customerno,
+                            '_value' => sprintf("%.0f", $invoiceData->customerno),
                         ],
                     ],
                     'cac:PostalAddress' => [
@@ -61,7 +61,7 @@ class InvoiceXmlService extends InvoiceService
             'cac:SellerSupplierParty' => [ // البيانات الخاصة بتسلسل مصدر الدخل للبائع
                 'cac:Party' => [
                     'cac:PartyIdentification' => [
-                        'cbc:ID' => $this->getCompanyInfo()->partyidentificationid, // تسلسل مصدر الدخل للبائع
+                        'cbc:ID' => $this->getCompanyInfo()->PartyIdentificationId, // تسلسل مصدر الدخل للبائع
                     ],
                 ],
             ],
@@ -70,13 +70,13 @@ class InvoiceXmlService extends InvoiceService
                 'cbc:AllowanceChargeReason' => 'discount', // سبب الخصم
                 'cbc:Amount' => [
                     '_attributes' => ['currencyID' => 'JOD'], // عملة الخصم
-                    '_value' => sprintf("%.9f",$invoiceData->amount), // مجموع الخصم
+                    '_value' => sprintf("%.9f", $invoiceData->amount), // مجموع الخصم
                 ],
             ],
             'cac:TaxTotal' => [
                 'cbc:TaxAmount' => [
                     '_attributes' => ['currencyID' => 'JOD'], // عملة الخصم
-                    '_value' => sprintf("%.9f",$invoiceData->taxamount), // مجموع الخصم
+                    '_value' => sprintf("%.9f", $invoiceData->taxamount), // مجموع الخصم
                 ],
             ],
             'cac:LegalMonetaryTotal' => [
@@ -86,7 +86,7 @@ class InvoiceXmlService extends InvoiceService
                 ],
                 'cbc:TaxInclusiveAmount' => [
                     '_attributes' => ['currencyID' => 'JO'], // عملة المبلغ شامل الضريبة
-                    '_value' => sprintf("%.9f",$invoiceData->taxinclusiveamount), // اجمالي الفاتورة
+                    '_value' => sprintf("%.9f", $invoiceData->taxinclusiveamount), // اجمالي الفاتورة
                 ],
                 'cbc:AllowanceTotalAmount' => [
                     '_attributes' => ['currencyID' => 'JO'], // عملة مجموع الخصم
@@ -102,37 +102,11 @@ class InvoiceXmlService extends InvoiceService
                 ],
             ],
             'cac:InvoiceLine' => $invoiceData->items->map(function ($item) {
-                // حساب القيمة الإجمالية للخط (السعر * الكمية - الخصم)
-                // $lineExtensionAmount = ($item->priceamount * $item->invoicedquantity) - $item->amount;
-
-                // النسبة الافتراضية للضريبة (الضريبة القياسية)
-                $taxCategory = 'S';  // الفئة الافتراضية هي "S" للضريبة القياسية
-                $taxPercent = $item->percent;  // النسبة الافتراضية للضريبة (مثال: 0.16 -> 16%)
-
-                // تطبيق النسب المحددة
-                $validTaxPercentages = [0, 1, 2, 3, 4, 5, 7, 8, 10, 16]; // النسب المتاحة
-                $roundedTaxPercent = round($item->percent * 100); // تقريب النسبة إلى أقرب عدد صحيح
-
-                // تحقق مما إذا كانت النسبة المدخلة موجودة في النسب المعتمدة
-                if (in_array($roundedTaxPercent, $validTaxPercentages)) {
-                    $taxPercent = $roundedTaxPercent;
-                } else {
-                    // إذا كانت النسبة غير معتمدة، قم بتعيينها إلى 0% أو أي قيمة أخرى مناسبة
-                    $taxPercent = 0;
-                    $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
-                }
-
-                // خاصة للحالات التي فيها النسبة 0.000 أو قريبة منها
-                if ($item->taxamount == 0 || $taxPercent == 0) {
-                    $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
-                    $taxPercent = 0;     // تعيين النسبة إلى 0%
-                }
-
                 return [
                     'cbc:ID' => $item->linenu,
                     'cbc:InvoicedQuantity' => [
                         '_attributes' => ['unitCode' => 'PCE'],
-                        '_value' => sprintf("%.0f",$item->invoicedquantity),
+                        '_value' => sprintf("%.0f", $item->invoicedquantity),
                     ],
                     'cbc:LineExtensionAmount' => [
                         '_attributes' => ['currencyID' => 'JOD'],
@@ -141,16 +115,16 @@ class InvoiceXmlService extends InvoiceService
                     'cac:TaxTotal' => [
                         'cbc:TaxAmount' => [
                             '_attributes' => ['currencyID' => 'JOD'],
-                            '_value' => sprintf( "%.9f",$item->taxamount),  // Tax value
+                            '_value' => sprintf("%.9f", $item->taxamount),  // Tax value
                         ],
                         'cbc:RoundingAmount' => [
                             '_attributes' => ['currencyID' => 'JOD'],
-                            '_value' => sprintf("%.9f",$item->roundingamount),  // Rounding amount, if any
+                            '_value' => sprintf("%.9f", $item->roundingamount),  // Rounding amount, if any
                         ],
                         'cac:TaxSubtotal' => [
                             'cbc:TaxAmount' => [
                                 '_attributes' => ['currencyID' => 'JOD'],
-                                '_value' => sprintf("%.9f",$item->taxamount),  // Tax value (repeated for sub-total)
+                                '_value' => sprintf("%.9f", $item->taxamount),  // Tax value (repeated for sub-total)
                             ],
                             'cac:TaxCategory' => [
                                 'cbc:ID' => [
@@ -158,9 +132,9 @@ class InvoiceXmlService extends InvoiceService
                                         'schemeAgencyID' => '6',
                                         'schemeID' => 'UN/ECE 5305',
                                     ],
-                                    '_value' => $taxCategory,  // Tax category ("O" for 0% or "S" for standard)
+                                    '_value' => $this->calculateTax($item)['taxCategory'],  // Tax category ("O" for 0% or "S" for standard)
                                 ],
-                                'cbc:Percent' => $taxPercent,  // Tax percentage (e.g., 16% or 0% based on the condition)
+                                'cbc:Percent' => $this->calculateTax($item)['taxPercent'],  // Tax percentage (e.g., 16% or 0% based on the condition)
                                 'cac:TaxScheme' => [
                                     'cbc:ID' => [
                                         '_attributes' => [
@@ -179,14 +153,14 @@ class InvoiceXmlService extends InvoiceService
                     'cac:Price' => [
                         'cbc:PriceAmount' => [
                             '_attributes' => ['currencyID' => 'JOD'],
-                            '_value' => sprintf("%.9f",$item->priceamount),  // Unit price before tax
+                            '_value' => sprintf("%.9f", $item->priceamount),  // Unit price before tax
                         ],
                         'cac:AllowanceCharge' => [
                             'cbc:ChargeIndicator' => 'false',  // For discount (set to false for discount)
                             'cbc:AllowanceChargeReason' => 'DISCOUNT',  // Reason for the charge (discount)
                             'cbc:Amount' => [
                                 '_attributes' => ['currencyID' => 'JOD'],
-                                '_value' => sprintf("%.9f",$item->amount),  // Discount amount
+                                '_value' => sprintf("%.9f", $item->amount),  // Discount amount
                             ],
                         ],
                     ],
@@ -254,7 +228,7 @@ class InvoiceXmlService extends InvoiceService
                     'cac:PartyIdentification' => [
                         'cbc:ID' => [
                             '_attributes' => ['schemeID' => $invoiceData->{'customer-schemetype'}],
-                            '_value' => $invoiceData->customerno,
+                            '_value' => sprintf("%.0f", $invoiceData->customerno),
                         ],
                     ],
                     'cac:PostalAddress' => [
@@ -272,7 +246,7 @@ class InvoiceXmlService extends InvoiceService
             'cac:SellerSupplierParty' => [ // البيانات الخاصة بتسلسل مصدر الدخل للبائع
                 'cac:Party' => [
                     'cac:PartyIdentification' => [
-                        'cbc:ID' => $this->getCompanyInfo()->partyidentificationid, // تسلسل مصدر الدخل للبائع
+                        'cbc:ID' => $this->getCompanyInfo()->PartyIdentificationId, // تسلسل مصدر الدخل للبائع
                     ],
                 ],
             ],
@@ -374,7 +348,7 @@ class InvoiceXmlService extends InvoiceService
                 ],
                 'cbc:PayableAmount' => [
                     '_attributes' => ['currencyID' => 'JO'], // عملة المبلغ المستحق
-                    '_value' => sprintf("%.9f",$invoiceData->taxexclusiveamount - $invoiceData->amount + $invoiceData->taxamount), // اجمالي الفاتورة بعد الخصم
+                    '_value' => sprintf("%.9f", $invoiceData->taxexclusiveamount - $invoiceData->amount + $invoiceData->taxamount), // اجمالي الفاتورة بعد الخصم
                 ],
             ],
             'cac:InvoiceLine' => $invoiceData->items->map(function ($item) {
@@ -412,21 +386,21 @@ class InvoiceXmlService extends InvoiceService
                     ],
                     'cbc:LineExtensionAmount' => [
                         '_attributes' => ['currencyID' => 'JOD'],
-                        '_value' => sprintf("%.9f",$item->lineextensionamount),  // Corrected LineExtensionAmount calculation
+                        '_value' => sprintf("%.9f", $item->lineextensionamount),  // Corrected LineExtensionAmount calculation
                     ],
                     'cac:TaxTotal' => [
                         'cbc:TaxAmount' => [
                             '_attributes' => ['currencyID' => 'JOD'],
-                            '_value' => sprintf("%.9f",$item->taxamount),  // Tax value
+                            '_value' => sprintf("%.9f", $item->taxamount),  // Tax value
                         ],
                         'cbc:RoundingAmount' => [
                             '_attributes' => ['currencyID' => 'JOD'],
-                            '_value' => sprintf("%.9f",$item->roundingamount),  // Rounding amount, if any
+                            '_value' => sprintf("%.9f", $item->roundingamount),  // Rounding amount, if any
                         ],
                         'cac:TaxSubtotal' => [
                             'cbc:TaxAmount' => [
                                 '_attributes' => ['currencyID' => 'JOD'],
-                                '_value' => sprintf("%.9f",$item->taxamount),  // Tax value (repeated for sub-total)
+                                '_value' => sprintf("%.9f", $item->taxamount),  // Tax value (repeated for sub-total)
                             ],
                             'cac:TaxCategory' => [
                                 'cbc:ID' => [
@@ -455,7 +429,7 @@ class InvoiceXmlService extends InvoiceService
                     'cac:Price' => [
                         'cbc:PriceAmount' => [
                             '_attributes' => ['currencyID' => 'JOD'],
-                            '_value' => sprintf( "%.9f",$item->priceamount),  // Unit price before tax
+                            '_value' => sprintf("%.9f", $item->priceamount),  // Unit price before tax
                         ],
                         'cac:AllowanceCharge' => [
                             'cbc:ChargeIndicator' => 'false',  // For discount (set to false for discount)
@@ -492,7 +466,7 @@ class InvoiceXmlService extends InvoiceService
     protected function generateInvoiceNumber()
     {
         // Get the last invoice number from the database (assume the table name is invoices)
-        $lastInvoice = DB::connection('odbc')->table('fawtara-01')->count();
+        $lastInvoice = DB::connection('mysql')->table('fawtara-01')->count();
 
         // If there's no invoice, start the counter at 1
         $nextInvoiceNumber = $lastInvoice ? $lastInvoice + 1 : 1;
@@ -503,10 +477,50 @@ class InvoiceXmlService extends InvoiceService
 
     protected function getCompanyInfo()
     {
-        $companyInfo = DB::connection('odbc')->select("SELECT * FROM [fawtara-00]");
-
-        [$companyInfo] = $companyInfo;
+        $companyInfo = DB::connection('mysql')->table('fawtara-00')->first();
 
         return $companyInfo;
+    }
+
+    /**
+     * Calculate tax category and percentage.
+     *
+     * @param object $item
+     * @return array
+     */
+    public function calculateTax($item)
+    {
+        // النسبة الافتراضية للضريبة (الضريبة القياسية)
+        $taxCategory = 'S';  // الفئة الافتراضية هي "S" للضريبة القياسية
+        $taxPercent = $item->percent;  // النسبة الافتراضية للضريبة (مثال: 0.16 -> 16%)
+
+        // تطبيق النسب المحددة
+        $validTaxPercentages = [0, 1, 2, 3, 4, 5, 7, 8, 10, 16]; // النسب المتاحة
+        $roundedTaxPercent = $item->percent; // تقريب النسبة إلى أقرب عدد صحيح
+
+        // تحقق مما إذا كانت النسبة المدخلة موجودة في النسب المعتمدة
+        if (in_array($roundedTaxPercent, $validTaxPercentages)) {
+            $taxPercent = $roundedTaxPercent;
+        } else {
+            // إذا كانت النسبة غير معتمدة، قم بتعيينها إلى 0% أو أي قيمة أخرى مناسبة
+            $taxPercent = 0;
+            $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
+        }
+
+        // خاصة للحالات التي فيها النسبة 0.000 أو قريبة منها
+        if ($item->taxamount == 0 || $taxPercent == 0) {
+            $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
+            $taxPercent = 0;     // تعيين النسبة إلى 0%
+        }
+
+        // إذا كانت النسبة أكبر من 0 وأقل من 1، تعيينها إلى 1
+        if ($taxPercent > 0 && $taxPercent < 1) {
+            $taxPercent = 1;
+        }
+
+        return [
+            'taxCategory' => $taxCategory,
+            'taxPercent' => $taxPercent
+        ];
     }
 }

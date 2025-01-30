@@ -21,7 +21,11 @@ class SendInvoiceController extends Controller
     public function sendInvoice($id)
     {
         // Fetch invoice data
-        $invoiceData = DB::connection('odbc')->select("SELECT * FROM [fawtara-01] WHERE [uuid] = ? AND [sent-to-fawtara] = 0", [$id]);
+        $invoiceData = DB::connection('mysql')
+            ->table('fawtara-01')
+            ->where('uuid', $id)
+            ->where('sent-to-fawtara', 0)
+            ->get();
 
         if (empty($invoiceData)) {
             flash()->error("Invoice not found or already sent.");
@@ -36,7 +40,7 @@ class SendInvoiceController extends Controller
         [$invoiceData] = $invoiceData; // Extract the first (and only) record
 
         // Fetch related items
-        $items = DB::connection("odbc")->table("fawtara-02")->where("uuid", $id)->get();
+        $items = DB::connection("mysql")->table("fawtara-02")->where("uuid", $id)->get();
         $invoiceData->items = $items;
 
         // Choose the correct function based on invoice type
@@ -64,7 +68,10 @@ class SendInvoiceController extends Controller
         if ($response['status']) {
             flash()->success("Invoice successfully sent.");
             // Fetch invoice data
-            DB::connection('odbc')->update("UPDATE [fawtara-01] SET [sent-to-fawtara] = 1 WHERE [uuid] = ?", [$id]);
+            DB::connection('mysql')
+                ->table('fawtara-01')
+                ->where('uuid', $id)
+                ->update(['sent-to-fawtara' => 1]);
         } else {
             flash()->error("Failed to send invoice: " . $response['message']);
         }

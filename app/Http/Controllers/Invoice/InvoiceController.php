@@ -16,7 +16,7 @@ class InvoiceController extends Controller
     {
         try {
             // Fetch all records from Access directly
-            $rawInvoices = DB::connection('odbc')->table('fawtara-01')->get();
+            $rawInvoices = DB::connection('mysql')->table('fawtara-01')->get();
 
             // Manual Pagination
             $currentPage = $request->input('page', 1);
@@ -61,7 +61,7 @@ class InvoiceController extends Controller
     public function show(string $id)
     {
         try {
-            $details = DB::connection('odbc')->table('fawtara-02')->where('uuid', $id)->get();
+            $details = DB::connection('mysql')->table('fawtara-02')->where('uuid', $id)->get();
             return view('invoice.show',  compact('details'));
         } catch (Exception $e) {
             flash()->error($e->getMessage());

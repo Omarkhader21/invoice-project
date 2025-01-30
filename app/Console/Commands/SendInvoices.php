@@ -56,7 +56,7 @@ class SendInvoices extends Command
     public function handle()
     {
         // Fetch all invoices that need to be sent
-        $invoices = DB::connection('odbc')->table('fawtara-01')->where('sent-to-fawtara', 0)->get();
+        $invoices = DB::connection(name: 'mysql')->table('fawtara-01')->where('sent-to-fawtara', 0)->get();
 
         if ($invoices->isEmpty()) {
             $this->info('No invoices to send.');
@@ -66,7 +66,7 @@ class SendInvoices extends Command
         foreach ($invoices as $invoice) {
             try {
                 // Fetch related items
-                $items = DB::connection("odbc")->table("fawtara-02")->where("uuid", $invoice->uuid)->where('invoice-type', $invoice->{'invoice-type'})->get();
+                $items = DB::connection("mysql")->table("fawtara-02")->where("uuid", $invoice->uuid)->where('invoice-type', $invoice->{'invoice-type'})->get();
                 $invoice->items = $items;
 
                 // Prepare the XML for this invoice
@@ -95,7 +95,10 @@ class SendInvoices extends Command
                     $this->info('Invoice ID ' . $invoice->uuid . ' has been sent successfully.');
 
                     // Update the 'sent-to-fawtara' field in the database
-                    DB::connection('odbc')->update("UPDATE [fawtara-01] SET [sent-to-fawtara] = 1 WHERE [uuid] = ?", [$invoice->uuid]);
+                    DB::connection('mysql')
+                        ->table('fawtara-01')
+                        ->where('uuid', $id)
+                        ->update(['sent-to-fawtara' => 1]);
                 } else {
                     // If the API call failed, log the error message
                     $this->error('Failed to send invoice ID ' . $invoice->uuid . '. Error: ' . $response['message']);

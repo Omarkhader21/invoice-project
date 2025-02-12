@@ -520,7 +520,7 @@ class InvoiceXmlService extends InvoiceService
 
         return [
             'taxCategory' => $taxCategory,
-            'taxPercent' => $taxPercent
+            'taxPercent' => $item->percent
         ];
     }
 }

@@ -132,9 +132,9 @@ class InvoiceXmlService extends InvoiceService
                                         'schemeAgencyID' => '6',
                                         'schemeID' => 'UN/ECE 5305',
                                     ],
-                                    '_value' => $this->calculateTax($item)['taxCategory'],  // Tax category ("O" for 0% or "S" for standard)
+                                    '_value' => $item->tax_type,  // Tax category ("O" for 0% or "S" for standard)
                                 ],
-                                'cbc:Percent' => $this->calculateTax($item)['taxPercent'],  // Tax percentage (e.g., 16% or 0% based on the condition)
+                                'cbc:Percent' => $item->percent,  // Tax percentage (e.g., 16% or 0% based on the condition)
                                 'cac:TaxScheme' => [
                                     'cbc:ID' => [
                                         '_attributes' => [
@@ -200,9 +200,9 @@ class InvoiceXmlService extends InvoiceService
             'cbc:TaxCurrencyCode' => 'JOD', // عملة الضريبة
             'cac:BillingReference' => [ // معلومات الفاتورة المراد الارجاع منها
                 'cac:InvoiceDocumentReference' => [
-                    'cbc:ID' => $invoiceData->{'ref-id'}, // رقم الفاتورة الأصلية المراد الإرجاع منها
-                    'cbc:UUID' => $invoiceData->{'ref-uuid'}, // الرقم المتسلسل للفاتورة الأصلية
-                    'cbc:DocumentDescription' => $invoiceData->{'ref-total'}, // إجمالي الفاتورة الأصلية
+                    'cbc:ID' => $invoiceData->{'ref_id'}, // رقم الفاتورة الأصلية المراد الإرجاع منها
+                    'cbc:UUID' => $invoiceData->{'ref_uuid'}, // الرقم المتسلسل للفاتورة الأصلية
+                    'cbc:DocumentDescription' => $invoiceData->{'ref_total'}, // إجمالي الفاتورة الأصلية
                 ],
             ],
             'cac:AdditionalDocumentReference' => [ // عداد الفاتورة
@@ -227,7 +227,7 @@ class InvoiceXmlService extends InvoiceService
                 'cac:Party' => [
                     'cac:PartyIdentification' => [
                         'cbc:ID' => [
-                            '_attributes' => ['schemeID' => $invoiceData->{'customer-schemetype'}],
+                            '_attributes' => ['schemeID' => $invoiceData->{'customer_schemetype'}],
                             '_value' => sprintf("%.0f", $invoiceData->customerno),
                         ],
                     ],
@@ -255,7 +255,7 @@ class InvoiceXmlService extends InvoiceService
                     '_attributes' => ['listID' => 'UN/ECE 4461'], // رمز الإرجاع
                     '_value' => '10', // القيمة الثابتة
                 ],
-                'cbc:InstructionNote' => $invoiceData->{'instruction-note'}, // سبب الإرجاع
+                'cbc:InstructionNote' => $invoiceData->{'instruction_note'}, // سبب الإرجاع
             ],
             'cac:AllowanceCharge' => [ // تفاصيل الخصم
                 'cbc:ChargeIndicator' => 'false', // يشير إلى أن هذا خصم وليس تكلفة
@@ -271,33 +271,6 @@ class InvoiceXmlService extends InvoiceService
                     '_value' => $invoiceData->taxamount, // مجموع قيم الضريبة المراد إرجاعها
                 ],
                 'cac:TaxSubtotal' => $invoiceData->items->map(function ($item) {
-
-                    // حساب القيمة الإجمالية للخط (السعر * الكمية - الخصم)
-                    $lineExtensionAmount = ($item->priceamount * $item->invoicedquantity) - $item->amount;
-
-                    // النسبة الافتراضية للضريبة (الضريبة القياسية)
-                    $taxCategory = 'S';  // الفئة الافتراضية هي "S" للضريبة القياسية
-                    $taxPercent = $item->percent * 100;  // النسبة الافتراضية للضريبة (مثال: 0.16 -> 16%)
-
-                    // تطبيق النسب المحددة
-                    $validTaxPercentages = [0, 1, 2, 3, 4, 5, 7, 8, 10, 16]; // النسب المتاحة
-                    $roundedTaxPercent = round($item->percent * 100); // تقريب النسبة إلى أقرب عدد صحيح
-
-                    // تحقق مما إذا كانت النسبة المدخلة موجودة في النسب المعتمدة
-                    if (in_array($roundedTaxPercent, $validTaxPercentages)) {
-                        $taxPercent = $roundedTaxPercent;
-                    } else {
-                        // إذا كانت النسبة غير معتمدة، قم بتعيينها إلى 0% أو أي قيمة أخرى مناسبة
-                        $taxPercent = 0;
-                        $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
-                    }
-
-                    // خاصة للحالات التي فيها النسبة 0.000 أو قريبة منها
-                    if ($item->taxamount == 0 || $taxPercent == 0) {
-                        $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
-                        $taxPercent = 0;     // تعيين النسبة إلى 0%
-                    }
-
                     return [
                         'cbc:TaxableAmount' => [
                             '_attributes' => ['currencyID' => 'JOD'], // عملة المبلغ الخاضع للضريبة
@@ -313,7 +286,7 @@ class InvoiceXmlService extends InvoiceService
                                     'schemeAgencyID' => '6',
                                     'schemeID' => 'UN/ECE 5305',
                                 ],
-                                '_value' => $taxCategory // الفئة الضريبية
+                                '_value' => $item->tax_type // الفئة الضريبية
                             ],
                             'cbc:Percent' => $item->percent, // نسبة الضريبة
                             'cac:TaxScheme' => [
@@ -352,37 +325,11 @@ class InvoiceXmlService extends InvoiceService
                 ],
             ],
             'cac:InvoiceLine' => $invoiceData->items->map(function ($item) {
-                // حساب القيمة الإجمالية للخط (السعر * الكمية - الخصم)
-                $lineExtensionAmount = ($item->priceamount * $item->invoicedquantity) - $item->amount;
-
-                // النسبة الافتراضية للضريبة (الضريبة القياسية)
-                $taxCategory = 'S';  // الفئة الافتراضية هي "S" للضريبة القياسية
-                $taxPercent = $item->percent * 100;  // النسبة الافتراضية للضريبة (مثال: 0.16 -> 16%)
-
-                // تطبيق النسب المحددة
-                $validTaxPercentages = [0, 1, 2, 3, 4, 5, 7, 8, 10, 16]; // النسب المتاحة
-                $roundedTaxPercent = round($item->percent * 100); // تقريب النسبة إلى أقرب عدد صحيح
-
-                // تحقق مما إذا كانت النسبة المدخلة موجودة في النسب المعتمدة
-                if (in_array($roundedTaxPercent, $validTaxPercentages)) {
-                    $taxPercent = $roundedTaxPercent;
-                } else {
-                    // إذا كانت النسبة غير معتمدة، قم بتعيينها إلى 0% أو أي قيمة أخرى مناسبة
-                    $taxPercent = 0;
-                    $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
-                }
-
-                // خاصة للحالات التي فيها النسبة 0.000 أو قريبة منها
-                if ($item->taxamount == 0 || $taxPercent == 0) {
-                    $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
-                    $taxPercent = 0;     // تعيين النسبة إلى 0%
-                }
-
                 return [
                     'cbc:ID' => $item->linenu,
                     'cbc:InvoicedQuantity' => [
                         '_attributes' => ['unitCode' => 'PCE'],
-                        '_value' => number_format($item->invoicedquantity, 0, '.', ''),
+                        '_value' => number_format($item->InvoicedQuantity, 0, '.', ''),
                     ],
                     'cbc:LineExtensionAmount' => [
                         '_attributes' => ['currencyID' => 'JOD'],
@@ -408,7 +355,7 @@ class InvoiceXmlService extends InvoiceService
                                         'schemeAgencyID' => '6',
                                         'schemeID' => 'UN/ECE 5305',
                                     ],
-                                    '_value' => $taxCategory,  // Tax category ("O" for 0% or "S" for standard)
+                                    '_value' => $item->tax_type,  // Tax category ("O" for 0% or "S" for standard)
                                 ],
                                 'cbc:Percent' => $item->percent,  // Tax percentage (e.g., 16% or 0% based on the condition)
                                 'cac:TaxScheme' => [
@@ -466,7 +413,7 @@ class InvoiceXmlService extends InvoiceService
     protected function generateInvoiceNumber()
     {
         // Get the last invoice number from the database (assume the table name is invoices)
-        $lastInvoice = DB::connection('mysql')->table('fawtara-01')->count();
+        $lastInvoice = DB::connection('mysql')->table('fawtara_01')->count();
 
         // If there's no invoice, start the counter at 1
         $nextInvoiceNumber = $lastInvoice ? $lastInvoice + 1 : 1;
@@ -477,7 +424,7 @@ class InvoiceXmlService extends InvoiceService
 
     protected function getCompanyInfo()
     {
-        $companyInfo = DB::connection('mysql')->table('fawtara-00')->first();
+        $companyInfo = DB::connection('mysql')->table('fawtara_00')->first();
 
         return $companyInfo;
     }

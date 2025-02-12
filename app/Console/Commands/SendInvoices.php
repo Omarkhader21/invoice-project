@@ -56,7 +56,7 @@ class SendInvoices extends Command
     public function handle()
     {
         // Fetch all invoices that need to be sent
-        $invoices = DB::connection(name: 'mysql')->table('fawtara-01')->where('sent-to-fawtara', 0)->get();
+        $invoices = DB::connection(name: 'mysql')->table('fawtara_01')->where('sent-to-fawtara', 0)->get();
 
         if ($invoices->isEmpty()) {
             $this->info('No invoices to send.');
@@ -66,11 +66,11 @@ class SendInvoices extends Command
         foreach ($invoices as $invoice) {
             try {
                 // Fetch related items
-                $items = DB::connection("mysql")->table("fawtara-02")->where("uuid", $invoice->uuid)->where('invoice-type', $invoice->{'invoice-type'})->get();
+                $items = DB::connection("mysql")->table("fawtara_02")->where("uuid", $invoice->uuid)->where('invoice-type', $invoice->{'invoice_type'})->get();
                 $invoice->items = $items;
 
                 // Prepare the XML for this invoice
-                if ($invoice->{'invoice-type'} === '388') { // General Sales Invoice
+                if ($invoice->{'invoice_type'} === '388') { // General Sales Invoice
                     $xmlData = $this->invoiceService->generateGeneralSalesInvoiceXml($invoice);
                 } elseif ($invoice->{'invoice-type'} === '381') { // Credit Invoice
                     $xmlData = $this->invoiceService->generateCreditInvoiceXml($invoice);
@@ -80,7 +80,7 @@ class SendInvoices extends Command
                 }
 
                 // Create the folder for the invoice type
-                $folderPath = $this->invoiceFileService->createFolder($invoice->{'invoice-type'});
+                $folderPath = $this->invoiceFileService->createFolder($invoice->{'invoice_type'});
 
                 // Save the XML to a file using the InvoiceFileService
                 $filePath = $this->invoiceFileService->saveInvoiceXml($xmlData, $folderPath, $invoice->uuid, $invoice->{'invoice-type'}); // Use the method from InvoiceFileService to save the file
@@ -91,14 +91,16 @@ class SendInvoices extends Command
                 // Check the response status and update the invoice accordingly
                 if ($response['status']) {
                     // If the API call was successful, mark the invoice as 'sent'
-                    $invoice->update(['sent-to-fawtara' => 1, 'status' => 'sent']);
+                    $invoice->update(['sent_to_fawtara' => 1, 'status' => 'sent']);
                     $this->info('Invoice ID ' . $invoice->uuid . ' has been sent successfully.');
 
                     // Update the 'sent-to-fawtara' field in the database
                     DB::connection('mysql')
-                        ->table('fawtara-01')
+                        ->table('fawtara_01')
                         ->where('uuid', $id)
-                        ->update(['sent-to-fawtara' => 1]);
+                        ->update(['sent_to_fawtara' => 1, 'qr_code' => $response['data']['EINV_QR']]);
+
+                    DB::connection('mysql')->table('fawtara_02')->where('uuid', $id)->update(['sent_to_fawtara' => 1]);
                 } else {
                     // If the API call failed, log the error message
                     $this->error('Failed to send invoice ID ' . $invoice->uuid . '. Error: ' . $response['message']);

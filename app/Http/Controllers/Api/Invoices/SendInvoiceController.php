@@ -22,7 +22,7 @@ class SendInvoiceController extends Controller
     {
         // Fetch invoice data
         $invoiceData = DB::connection('mysql')
-            ->table('fawtara-01')
+            ->table('fawtara_01')
             ->where('uuid', $id)
             ->where('sent_to_fawtara', 0)
             ->get();
@@ -40,7 +40,7 @@ class SendInvoiceController extends Controller
         [$invoiceData] = $invoiceData; // Extract the first (and only) record
 
         // Fetch related items
-        $items = DB::connection("mysql")->table("fawtara-02")->where("uuid", $id)->get();
+        $items = DB::connection("mysql")->table("fawtara_02")->where("uuid", $id)->get();
         $invoiceData->items = $items;
 
         // Choose the correct function based on invoice type
@@ -66,12 +66,18 @@ class SendInvoiceController extends Controller
 
         // Handle API response
         if ($response['status']) {
+
             flash()->success("Invoice successfully sent.");
             // Fetch invoice data
             DB::connection('mysql')
-                ->table('fawtara-01')
+                ->table('fawtara_01')
                 ->where('uuid', $id)
-                ->update(['sent_to_fawtara' => 1]);
+                ->update(['sent_to_fawtara' => 1, 'qr_code' => $response['data']['EINV_QR']]);
+
+            DB::connection('mysql')
+                ->table('fawtara_02')
+                ->where('uuid', $id)
+                ->update(['sent_to_fawtara' => 1, 'qr_code']);
         } else {
             flash()->error("Failed to send invoice: " . $response['message']);
         }

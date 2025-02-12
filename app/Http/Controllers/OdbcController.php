@@ -11,7 +11,7 @@ class OdbcController extends Controller
     {
         try {
             // Attempt the query using the ODBC connection
-            $results = DB::connection('mysql')->table('fawtara-01')->get();
+            $results = DB::connection('mysql')->table('fawtara_01')->get();
             // If the query is successful, return success
             if ($results) {
                 return response()->json(['name' => $results]);

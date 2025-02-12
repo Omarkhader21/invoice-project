@@ -75,7 +75,7 @@
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                                                     {{ $invoice->{'invoicetypecode'} }}</td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
-                                                    {{ $invoice->{'invoice-type'} }}</td>
+                                                    {{ $invoice->{'invoice_type'} }}</td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                                                     {{ $invoice->{'registrationname'} }}</td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
@@ -88,7 +88,7 @@
                                                     {{ $invoice->{'taxinclusiveamount'} }}</td>
                                                 <td
                                                     class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-center">
-                                                    @if ($invoice->{'sent-to-fawtara'} == '1')
+                                                    @if ($invoice->{'sent_to_fawtara'} == '1')
                                                         <i class="fa-solid fa-circle-check text-xl text-green-700"></i>
                                                     @else
                                                         <i class="fa-solid fa-circle-xmark text-xl text-red-700"></i>
@@ -100,7 +100,7 @@
                                                         Show
                                                     </a>
 
-                                                    @if($invoice->{'sent-to-fawtara'} == '0')
+                                                    @if($invoice->{'sent_to_fawtara'} == '0')
                                                     <form action="{{ route('send-Invoice', $invoice->uuid) }}"
                                                         method="POST" class="inline-flex">
                                                         @csrf

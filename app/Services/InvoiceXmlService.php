@@ -42,7 +42,7 @@ class InvoiceXmlService extends InvoiceService
                 'cac:Party' => [
                     'cac:PartyIdentification' => [
                         'cbc:ID' => [
-                            '_attributes' => ['schemeID' => $invoiceData->{'customer-schemetype'}],
+                            '_attributes' => ['schemeID' => $invoiceData->{'customer_schemetype'}],
                             '_value' => sprintf("%.0f", $invoiceData->customerno),
                         ],
                     ],
@@ -106,7 +106,7 @@ class InvoiceXmlService extends InvoiceService
                     'cbc:ID' => $item->linenu,
                     'cbc:InvoicedQuantity' => [
                         '_attributes' => ['unitCode' => 'PCE'],
-                        '_value' => sprintf("%.0f", $item->invoicedquantity),
+                        '_value' => sprintf("%.0f", $item->InvoicedQuantity),
                     ],
                     'cbc:LineExtensionAmount' => [
                         '_attributes' => ['currencyID' => 'JOD'],

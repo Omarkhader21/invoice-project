@@ -1,67 +1,49 @@
 CREATE TABLE `fawtara-00` (
-    `CompanyId` INT NOT NULL,
-    `suppliername` VARCHAR(255) NOT NULL,
-    `PartyIdentificationId` VARCHAR(255) NOT NULL,
+    `CompanyId` INT,
+    `suppliername` VARCHAR(255),
+    `PartyIdentificationId` VARCHAR(255),
     PRIMARY KEY (`CompanyId`)
 );
 
-CREATE TABLE `fawtara-sales` (
+CREATE TABLE `fawtara_01` (
+    `uuid` BIGINT PRIMARY KEY, -- Common primary key for both tables
     `invoice_type_temp` INT,
     `invoice_no_temp` INT,
     `id` INT,
-    `uuid` BIGINT PRIMARY KEY,
     `issuedate` DATE,
     `invoicetypecode` VARCHAR(255),
     `registrationname` VARCHAR(255),
-    `amount` DECIMAL(15, 2),
-    `taxamount` DECIMAL(15, 2),
-    `taxexclusiveamount` DECIMAL(15, 2),
-    `taxinclusiveamount` DECIMAL(15, 2),
-    `sent_to_fawtara` TINYINT(1) DEFAULT 0,
-    `invoice_type` VARCHAR(255),
-    `instruction_note` VARCHAR(255),
-    `customer_schemetype` VARCHAR(255) DEFAULT 'TN',
-    `customerno` INT
-);
-
-CREATE TABLE `fawtara-credit-sales` (
-    `invoice_type_temp` INT,
-    `invoice_no_temp` INT,
-    `id` INT,
-    `uuid` BIGINT PRIMARY KEY, -- Removed NOT NULL (but PRIMARY KEY may still enforce it implicitly)
-    `issuedate` DATE,
-    `invoicetypecode` VARCHAR(255),
-    `registrationname` VARCHAR(255),
-    `amount` DECIMAL(15, 2),
-    `taxamount` DECIMAL(15, 2),
-    `taxexclusiveamount` DECIMAL(15, 2),
-    `taxinclusiveamount` DECIMAL(15, 2),
+    `amount` DECIMAL(18, 9), -- 18 total digits, 9 after the decimal
+    `taxamount` DECIMAL(18, 9), -- 18 total digits, 9 after the decimal
+    `taxexclusiveamount` DECIMAL(18, 9), -- 18 total digits, 9 after the decimal
+    `taxinclusiveamount` DECIMAL(18, 9), -- 18 total digits, 9 after the decimal
     `sent_to_fawtara` TINYINT(1) DEFAULT 0 CHECK (sent_to_fawtara IN (0, 1)),
     `invoice_type` VARCHAR(255),
-    `ref_id` INT,
-    `ref_uuid` BIGINT,
-    `ref_total` BIGINT,
     `instruction_note` VARCHAR(255),
     `customer_schemetype` VARCHAR(255) DEFAULT 'TN',
-    `customerno` INT
+    `customerno` INT,
+    `ref_id` INT, -- From fawtara-credit-sales
+    `ref_uuid` BIGINT, -- From fawtara-credit-sales
+    `ref_total` BIGINT -- From fawtara-credit-sales
 );
 
-
-CREATE TABLE `fawtara-02` (
+CREATE TABLE `fawtara_02` (
     `invoice_type_temp` INT,
     `invoice_no_temp` INT,
     `id` INT,
     `uuid` BIGINT,
-    `linenu` INT PRIMARY KEY,  -- Removed NOT NULL (but PRIMARY KEY may still enforce it implicitly)
+    `linenu` INT,
     `InvoicedQuantity` INT,
-    `lineextensionamount` DECIMAL(15, 2),
-    `taxamount` DECIMAL(15, 2),
-    `percent` DECIMAL(15, 2),
+    `lineextensionamount` DECIMAL(15, 9), -- 9 digits after the decimal point
+    `taxamount` DECIMAL(15, 9), -- 9 digits after the decimal point
+    `percent` DECIMAL(15, 9), -- 9 digits after the decimal point
     `itemname` VARCHAR(255),
-    `sent_to_fawtara` TINYINT(1) DEFAULT 0 CHECK (sent_to_fawtara IN (0, 1)),  -- Kept DEFAULT and CHECK
-    `priceamount` DECIMAL(15, 2),
-    `amount` DECIMAL(15, 2),
-    `roundingamount` DECIMAL(15, 2),
+    `sent_to_fawtara` TINYINT(1) DEFAULT 0 CHECK (sent_to_fawtara IN (0, 1)),
+    `priceamount` DECIMAL(15, 9), -- 9 digits after the decimal point
+    `amount` DECIMAL(15, 9), -- 9 digits after the decimal point
+    `roundingamount` DECIMAL(15, 9), -- 9 digits after the decimal point
     `invoice_type` VARCHAR(255),
-    `invoicetypecode` VARCHAR(255)
+    `invoicetypecode` VARCHAR(255),
+    `tax_type` VARCHAR(255),
+    PRIMARY KEY (`uuid`, `linenu`) -- Composite primary key
 );

@@ -48,7 +48,7 @@
                                 {{ $item->{'itemname'} }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {{ $item->{'invoicedquantity'} }}
+                                {{ $item->{'InvoicedQuantity'} }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                 {{ $item->{'lineextensionamount'} }}

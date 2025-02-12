@@ -24,7 +24,7 @@ class SendInvoiceController extends Controller
         $invoiceData = DB::connection('mysql')
             ->table('fawtara-01')
             ->where('uuid', $id)
-            ->where('sent-to-fawtara', 0)
+            ->where('sent_to_fawtara', 0)
             ->get();
 
         if (empty($invoiceData)) {
@@ -46,9 +46,9 @@ class SendInvoiceController extends Controller
         // Choose the correct function based on invoice type
         $xml = null;
 
-        if ($invoiceData->{'invoice-type'} === '388') { // General Sales Invoice
+        if ($invoiceData->{'invoice_type'} === '388') { // General Sales Invoice
             $xml = $this->invoiceService->generateGeneralSalesInvoiceXml($invoiceData);
-        } elseif ($invoiceData->{'invoice-type'} === '381') { // Credit Invoice
+        } elseif ($invoiceData->{'invoice_type'} === '381') { // Credit Invoice
             $xml = $this->invoiceService->generateCreditInvoiceXml($invoiceData);
         } else {
             flash()->error("Unsupported invoice type.");
@@ -56,10 +56,10 @@ class SendInvoiceController extends Controller
         }
 
         // Create the folder for the invoice type
-        $folderPath = $this->invoiceFileService->createFolder($invoiceData->{'invoice-type'});
+        $folderPath = $this->invoiceFileService->createFolder($invoiceData->{'invoice_type'});
 
         // Save the XML file in the correct folder
-        $filePath = $this->invoiceFileService->saveInvoiceXml($xml, $folderPath, $id, $invoiceData->{'invoice-type'});
+        $filePath = $this->invoiceFileService->saveInvoiceXml($xml, $folderPath, $id, $invoiceData->{'invoice_type'});
 
         // Send the XML to the API
         $response = $this->invoiceService->sendInvoiceToApi($filePath, $invoiceData->uuid);
@@ -71,7 +71,7 @@ class SendInvoiceController extends Controller
             DB::connection('mysql')
                 ->table('fawtara-01')
                 ->where('uuid', $id)
-                ->update(['sent-to-fawtara' => 1]);
+                ->update(['sent_to_fawtara' => 1]);
         } else {
             flash()->error("Failed to send invoice: " . $response['message']);
         }

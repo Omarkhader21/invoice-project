@@ -77,7 +77,7 @@ class SendInvoiceController extends Controller
             DB::connection('mysql')
                 ->table('fawtara_02')
                 ->where('uuid', $id)
-                ->update(['sent_to_fawtara' => 1, 'qr_code']);
+                ->update(['sent_to_fawtara' => 1]);
         } else {
             flash()->error("Failed to send invoice: " . $response['message']);
         }

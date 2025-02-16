@@ -134,7 +134,7 @@ class InvoiceXmlService extends InvoiceService
                                     ],
                                     '_value' => $item->tax_type,  // Tax category ("O" for 0% or "S" for standard)
                                 ],
-                                'cbc:Percent' => $item->percent,  // Tax percentage (e.g., 16% or 0% based on the condition)
+                                'cbc:Percent' => sprintf("%.0f",$item->percent),  // Tax percentage (e.g., 16% or 0% based on the condition)
                                 'cac:TaxScheme' => [
                                     'cbc:ID' => [
                                         '_attributes' => [
@@ -288,7 +288,7 @@ class InvoiceXmlService extends InvoiceService
                                 ],
                                 '_value' => $item->tax_type // الفئة الضريبية
                             ],
-                            'cbc:Percent' => $item->percent, // نسبة الضريبة
+                            'cbc:Percent' => sprintf("%.0f",$item->percent), // نسبة الضريبة
                             'cac:TaxScheme' => [
                                 'cbc:ID' => [
                                     '_attributes' => [
@@ -357,7 +357,7 @@ class InvoiceXmlService extends InvoiceService
                                     ],
                                     '_value' => $item->tax_type,  // Tax category ("O" for 0% or "S" for standard)
                                 ],
-                                'cbc:Percent' => $item->percent,  // Tax percentage (e.g., 16% or 0% based on the condition)
+                                'cbc:Percent' => sprintf("%.0f",$item->percent),  // Tax percentage (e.g., 16% or 0% based on the condition)
                                 'cac:TaxScheme' => [
                                     'cbc:ID' => [
                                         '_attributes' => [

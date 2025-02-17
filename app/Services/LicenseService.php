@@ -23,7 +23,7 @@ class LicenseService
                 'machine_id'  => $this->getMachineID(),
                 'license_key' => Str::uuid(), // Generate unique key
                 'installed_at' => now()->toDateString(),
-                'expires_at'   => now()->addMonth()->toDateString(),
+                'expires_at'   => now()->addYear()->toDateString(),
                 'is_active'    => false
             ];
             File::put($this->licenseFile, json_encode($data, JSON_PRETTY_PRINT));
@@ -66,7 +66,7 @@ class LicenseService
         }
 
         $data['is_active'] = true;
-        $data['expires_at'] = now()->addMonth()->toDateString(); // Extend 1 month
+        $data['expires_at'] = now()->addYear()->toDateString(); // Extend 1 Year
 
         File::put($this->licenseFile, json_encode($data, JSON_PRETTY_PRINT));
 

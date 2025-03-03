@@ -24,4 +24,5 @@ Route::middleware([
 
     Route::resource('/invoice', InvoiceController::class)->only(['index', 'show']);
     Route::post('send/invoice/{id}', [SendInvoiceController::class, 'sendInvoice'])->name('send-Invoice');
+    Route::get('generate/qrcode/{id}', [InvoiceController::class, 'generateQrCode'])->name('generate-qrcode');
 });

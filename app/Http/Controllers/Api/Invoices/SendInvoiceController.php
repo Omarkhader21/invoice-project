@@ -5,17 +5,20 @@ namespace App\Http\Controllers\Api\Invoices;
 use App\Http\Controllers\Controller;
 use App\Services\InvoiceService;
 use App\Services\InvoiceFileService;
+use App\Services\QrcodeService;
 use Illuminate\Support\Facades\DB;
 
 class SendInvoiceController extends Controller
 {
     protected $invoiceService;
     protected $invoiceFileService;
+    protected $qrcodeService;
 
-    public function __construct(InvoiceService $invoiceService, InvoiceFileService $invoiceFileService)
+    public function __construct(InvoiceService $invoiceService, InvoiceFileService $invoiceFileService, QrcodeService $qrcodeService)
     {
         $this->invoiceService = $invoiceService;
         $this->invoiceFileService = $invoiceFileService;
+        $this->qrcodeService = $qrcodeService;
     }
 
     public function sendInvoice($id)
@@ -78,6 +81,10 @@ class SendInvoiceController extends Controller
                 ->table('fawtara_02')
                 ->where('uuid', $id)
                 ->update(['sent_to_fawtara' => 1]);
+
+            // Generate and save the QR code using the QrcodeService
+            $this->qrcodeService->generateQrCode($id, $response['data']['EINV_QR']);   
+            
         } else {
             flash()->error("Failed to send invoice: " . $response['message']);
         }

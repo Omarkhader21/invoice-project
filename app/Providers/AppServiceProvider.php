@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\InvoiceService::class, \App\Services\InvoiceXmlService::class);
 
         // Register InvoiceFileService as a singleton
-        $this->app->singleton(\App\Services\InvoiceFileService::class);
+        $this->app->singleton(\App\Services\InvoiceFileService::class, \App\Services\QrcodeService::class);
 
         // Register \App\Services\LicenseService::class 
         $this->app->singleton(LicenseService::class, function ($app) {

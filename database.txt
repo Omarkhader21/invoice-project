@@ -24,8 +24,8 @@ CREATE TABLE `fawtara_01` (
     `customerno` INT,
     `ref_id` INT, -- From fawtara-credit-sales
     `ref_uuid` BIGINT, -- From fawtara-credit-sales
-    `ref_total` BIGINT -- From fawtara-credit-sales
-    `qr_code` TEXT,
+    `ref_total` BIGINT, -- From fawtara-credit-sales
+    `qr_code` TEXT
 );
 
 CREATE TABLE `fawtara_02` (

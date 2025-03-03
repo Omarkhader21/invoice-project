@@ -2,13 +2,21 @@
 
 namespace App\Http\Controllers\Invoice;
 
-use App\Http\Controllers\Controller;
 use Exception;
 use Illuminate\Http\Request;
+use App\Services\QrcodeService;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 
 class InvoiceController extends Controller
 {
+    protected $qrcodeService;
+
+    public function __construct()
+    {
+        $this->qrcodeService = new QrcodeService();
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -40,22 +48,6 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
      * Display the specified resource.
      */
     public function show(string $id)
@@ -70,26 +62,33 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Generate QrCode.
      */
-    public function edit(string $id)
+    public function generateQrCode(string $id)
     {
-        //
-    }
+        try {
+            // Retrieve the invoice from the database
+            $invoice = DB::connection('mysql')->table('fawtara_01')
+                ->where('uuid', $id)
+                ->select('qr_code')
+                ->first();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+            // If the invoice is not found, show an error
+            if (!$invoice) {
+                flash()->error('Invoice not found.');
+                return redirect()->back();
+            }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+            // Generate and save the QR code using the QrcodeService
+            $qrCodePath = $this->qrcodeService->generateQrCode($id, $invoice->qr_code);
+
+            // Flash success message and return the QR code file for download
+            flash()->success('QR Code generated successfully!');
+            return response()->download($qrCodePath);
+        } catch (Exception $e) {
+            // If any error occurs, catch it and display the error message
+            flash()->error($e->getMessage());
+            return redirect()->back();
+        }
     }
 }

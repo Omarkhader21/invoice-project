@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Services\QrcodeService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use App\Services\InvoiceService;
+use Illuminate\Support\Facades\DB;
 use App\Services\InvoiceFileService;
 use App\Services\LicenseService; // Add the LicenseService for validation
 
@@ -12,17 +13,18 @@ class SendInvoices extends Command
 {
     protected $signature = 'send:invoices';
     protected $description = 'Send invoices to the external API.';
-
     protected $invoiceService;
     protected $invoiceFileService;
     protected $licenseService; // Add license service
+    protected $qrcodeService;
 
-    public function __construct(InvoiceService $invoiceService, InvoiceFileService $invoiceFileService, LicenseService $licenseService)
+    public function __construct(InvoiceService $invoiceService, InvoiceFileService $invoiceFileService, LicenseService $licenseService, QrcodeService $qrcodeService)
     {
         parent::__construct();
         $this->invoiceService = $invoiceService;
         $this->invoiceFileService = $invoiceFileService;
         $this->licenseService = $licenseService; // Initialize license service
+        $this->qrcodeService = $qrcodeService;
     }
 
     public function handle()
@@ -74,6 +76,8 @@ class SendInvoices extends Command
                         ->update(['sent_to_fawtara' => 1, 'qr_code' => $response['data']['EINV_QR']]);
 
                     DB::connection('mysql')->table('fawtara_02')->where('uuid', $invoice->uuid)->update(['sent_to_fawtara' => 1]);
+
+                    $this->qrcodeService->generateQrCode($invoice->uuid, $response['data']['EINV_QR']);
                 } else {
                     $this->error('Failed to send invoice ID ' . $invoice->uuid . '. Error: ' . $response['message']);
                 }

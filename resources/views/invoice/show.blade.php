@@ -12,7 +12,7 @@
         </div>
     </x-slot>
     <div>
-        <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+        <div class="max-w-12xl mx-auto py-12 sm:px-6 lg:px-12">
             <div class="bg-white shadow-md rounded-lg overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">

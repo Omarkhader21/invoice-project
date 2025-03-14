@@ -8,11 +8,13 @@ use Exception;
 
 class QrcodeService
 {
+    protected $basePath = 'D:\qr_codes'; // Define the base path for QR code storage
+
     public function createFolder(): string
     {
         $year = date('Y'); // Get the current year
         $folderName = "{$year}_qrcode";
-        $folderPath = storage_path("app/invoices/{$folderName}");
+        $folderPath = "{$this->basePath}/{$folderName}";
 
         if (!File::exists($folderPath)) {
             File::makeDirectory($folderPath, 0755, true);
@@ -27,18 +29,18 @@ class QrcodeService
             File::makeDirectory($folderPath, 0755, true);
         }
 
-        $svgFileName = "qrcode_{$id}.png";
-        $svgFilePath = "{$folderPath}/{$svgFileName}";
+        $pngFileName = "qrcode_{$id}.png";
+        $pngFilePath = "{$folderPath}/{$pngFileName}";
 
-        // Save the QR code content as SVG
+        // Save the QR code content as PNG
         try {
-            file_put_contents($svgFilePath, $qrcode);
+            file_put_contents($pngFilePath, $qrcode);
         } catch (Exception $e) {
-            throw new Exception("Failed to save QR code SVG: {$e->getMessage()}");
+            throw new Exception("Failed to save QR code PNG: {$e->getMessage()}");
         }
 
         return [
-            'png' => $svgFilePath,
+            'png' => $pngFilePath,
         ];
     }
 
@@ -46,13 +48,13 @@ class QrcodeService
     {
         $folderPath = $this->createFolder();
 
-        // Generate the QR code directly from the provided text (e.g., EINV_QR Base64 data) in SVG format
+        // Generate the QR code directly from the provided text (e.g., EINV_QR Base64 data) in PNG format
         $qrcode = QrCode::format('png')
             ->size(500)
-            ->generate('AQACAnt9AwVmYWxzZQQNODEwLjUwMDAwMDAwMAUFMzIwMzAGCzMuNTAwMDAwMDAwBwoyMDI1LTAyLTA2CAcxNTIyODUwCRjZh9in2YrZhCDYp9io2Ygg2LXZitin2YUKYE1FVUNJUURoSXhLTDhvN2FjUGhUOGFzR1dTcnVjTnFkc2IzRWoyUkRiZ3FKNDFFZlRnSWdIZ3dWWkxpU2FpdGd3Wm8zOEtvOGhSZHRJZjBXcUh6NzE5N3VORnlOWG1vPQ==');
+            ->generate($text);
 
         $filePaths = $this->saveQrcode($qrcode, $folderPath, $id);
 
-        return $filePaths['png']; // Return SVG path
+        return $filePaths['png']; // Return PNG path
     }
 }

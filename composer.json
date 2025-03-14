@@ -7,14 +7,15 @@
     "require": {
         "php": "^8.2",
         "guzzlehttp/guzzle": "^7.9",
+        "intervention/image": "^2",
         "laravel/framework": "^11.9",
         "laravel/jetstream": "^5.3",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "livewire/livewire": "^3.5",
         "php-flasher/flasher-laravel": "^2.1",
-        "spatie/array-to-xml": "^3.4",
-        "simplesoftwareio/simple-qrcode": "^4.2"
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "spatie/array-to-xml": "^3.4"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

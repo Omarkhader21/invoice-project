@@ -62,7 +62,7 @@ class SendInvoiceController extends Controller
         $folderPath = $this->invoiceFileService->createFolder($invoiceData->{'invoice_type'});
 
         // Save the XML file in the correct folder
-        $filePath = $this->invoiceFileService->saveInvoiceXml($xml, $folderPath, $id, $invoiceData->{'invoice_type'});
+        $filePath = $this->invoiceFileService->saveInvoiceXml($xml, $folderPath, $id, $invoiceData->{'invoice_type'}, $invoiceData->{'invoicetypecode'});
 
         // Send the XML to the API
         $response = $this->invoiceService->sendInvoiceToApi($filePath, $invoiceData->uuid);

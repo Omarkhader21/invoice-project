@@ -61,7 +61,7 @@ class SendInvoices extends Command
 
                 // Create a folder and save XML file
                 $folderPath = $this->invoiceFileService->createFolder($invoice->invoice_type);
-                $filePath = $this->invoiceFileService->saveInvoiceXml($xmlData, $folderPath, $invoice->uuid, $invoice->invoice_type);
+                $filePath = $this->invoiceFileService->saveInvoiceXml($xmlData, $folderPath, $invoice->uuid, $invoice->invoice_type, $invoice->invoicetypecode);
 
                 // Send the XML to the external API
                 $response = $this->invoiceService->sendInvoiceToApi($filePath, $invoice->uuid);

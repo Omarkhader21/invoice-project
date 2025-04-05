@@ -77,7 +77,7 @@ class SendInvoices extends Command
 
                     DB::connection('mysql')->table('fawtara_02')->where('uuid', $invoice->uuid)->update(['sent_to_fawtara' => 1]);
 
-                    $this->qrcodeService->generateQrCode($invoice->uuid, $response['data']['EINV_QR']);
+                    // $this->qrcodeService->generateQrCode($invoice->uuid, $response['data']['EINV_QR']);
                 } else {
                     $this->error('Failed to send invoice ID ' . $invoice->uuid . '. Error: ' . $response['message']);
                 }

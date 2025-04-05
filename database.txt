@@ -34,7 +34,7 @@ CREATE TABLE `fawtara_02` (
     `id` INT,
     `uuid` BIGINT,
     `linenu` INT,
-    `InvoicedQuantity` INT,
+    `InvoicedQuantity` DECIMAL(15, 9),
     `lineextensionamount` DECIMAL(15, 9), -- 9 digits after the decimal point
     `taxamount` DECIMAL(15, 9), -- 9 digits after the decimal point
     `percent` DECIMAL(15, 9), -- 9 digits after the decimal point

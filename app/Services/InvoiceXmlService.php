@@ -106,7 +106,7 @@ class InvoiceXmlService extends InvoiceService
                     'cbc:ID' => $item->linenu,
                     'cbc:InvoicedQuantity' => [
                         '_attributes' => ['unitCode' => 'PCE'],
-                        '_value' => sprintf("%.0f", $item->InvoicedQuantity),
+                        '_value' => sprintf("%.9f", $item->InvoicedQuantity),
                     ],
                     'cbc:LineExtensionAmount' => [
                         '_attributes' => ['currencyID' => 'JOD'],
@@ -134,7 +134,7 @@ class InvoiceXmlService extends InvoiceService
                                     ],
                                     '_value' => $item->tax_type,  // Tax category ("O" for 0% or "S" for standard)
                                 ],
-                                'cbc:Percent' => sprintf("%.0f",$item->percent),  // Tax percentage (e.g., 16% or 0% based on the condition)
+                                'cbc:Percent' => sprintf("%.9f", $item->percent),  // Tax percentage (e.g., 16% or 0% based on the condition)
                                 'cac:TaxScheme' => [
                                     'cbc:ID' => [
                                         '_attributes' => [
@@ -288,7 +288,7 @@ class InvoiceXmlService extends InvoiceService
                                 ],
                                 '_value' => $item->tax_type // الفئة الضريبية
                             ],
-                            'cbc:Percent' => sprintf("%.0f",$item->percent), // نسبة الضريبة
+                            'cbc:Percent' => sprintf("%.0f", $item->percent), // نسبة الضريبة
                             'cac:TaxScheme' => [
                                 'cbc:ID' => [
                                     '_attributes' => [
@@ -329,7 +329,7 @@ class InvoiceXmlService extends InvoiceService
                     'cbc:ID' => $item->linenu,
                     'cbc:InvoicedQuantity' => [
                         '_attributes' => ['unitCode' => 'PCE'],
-                        '_value' => number_format($item->InvoicedQuantity, 0, '.', ''),
+                        '_value' => sprintf("%.9f", $item->InvoicedQuantity),
                     ],
                     'cbc:LineExtensionAmount' => [
                         '_attributes' => ['currencyID' => 'JOD'],
@@ -357,7 +357,7 @@ class InvoiceXmlService extends InvoiceService
                                     ],
                                     '_value' => $item->tax_type,  // Tax category ("O" for 0% or "S" for standard)
                                 ],
-                                'cbc:Percent' => sprintf("%.0f",$item->percent),  // Tax percentage (e.g., 16% or 0% based on the condition)
+                                'cbc:Percent' => sprintf("%.9f", $item->percent),  // Tax percentage (e.g., 16% or 0% based on the condition)
                                 'cac:TaxScheme' => [
                                     'cbc:ID' => [
                                         '_attributes' => [

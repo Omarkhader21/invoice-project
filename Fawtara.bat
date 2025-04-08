@@ -1,4 +1,4 @@
 @echo off
-cd /d "C:\Users\omarm\Documents\invoice-project"
+cd /d ""
 php artisan send:invoices
 pause

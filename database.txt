@@ -34,15 +34,15 @@ CREATE TABLE `fawtara_02` (
     `id` INT,
     `uuid` BIGINT,
     `linenu` INT,
-    `InvoicedQuantity` DECIMAL(15, 9),
-    `lineextensionamount` DECIMAL(15, 9), -- 9 digits after the decimal point
-    `taxamount` DECIMAL(15, 9), -- 9 digits after the decimal point
-    `percent` DECIMAL(15, 9), -- 9 digits after the decimal point
+    `InvoicedQuantity` DECIMAL(18, 9),
+    `lineextensionamount` DECIMAL(18, 9), -- 9 digits after the decimal point
+    `taxamount` DECIMAL(18, 9), -- 9 digits after the decimal point
+    `percent` DECIMAL(18, 9), -- 9 digits after the decimal point
     `itemname` VARCHAR(255),
     `sent_to_fawtara` TINYINT(1) DEFAULT 0 CHECK (sent_to_fawtara IN (0, 1)),
-    `priceamount` DECIMAL(15, 9), -- 9 digits after the decimal point
-    `amount` DECIMAL(15, 9), -- 9 digits after the decimal point
-    `roundingamount` DECIMAL(15, 9), -- 9 digits after the decimal point
+    `priceamount` DECIMAL(18, 9), -- 9 digits after the decimal point
+    `amount` DECIMAL(18, 9), -- 9 digits after the decimal point
+    `roundingamount` DECIMAL(18, 9), -- 9 digits after the decimal point
     `invoice_type` VARCHAR(255),
     `invoicetypecode` VARCHAR(255),
     `tax_type` VARCHAR(255),

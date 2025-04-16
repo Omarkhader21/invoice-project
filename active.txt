@@ -1,3 +1,0 @@
-1) php artisan tinker
-2) app(\App\Services\LicenseService::class)->initialize();
-3) > app(App\Services\LicenseService::class)->activate('active_code');

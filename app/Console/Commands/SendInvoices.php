@@ -74,7 +74,6 @@ class SendInvoices extends Command
                     $errorMessage = 'Unsupported invoice type: ' . $invoice->invoice_type;
                     $this->error('Failed to send invoice ID: ' . $invoice->uuid . '. ' . $errorMessage);
                     Log::error('Invoice ID: ' . $invoice->uuid . ' failed: ' . $errorMessage);
-                    $this->markInvoiceAsFailed($invoice->uuid, $errorMessage);
                     $failureCount++;
                     continue;
                 }
@@ -106,7 +105,6 @@ class SendInvoices extends Command
                         ->update([
                             'sent_to_fawtara' => 1,
                             'qr_code' => $response['data']['EINV_QR'] ?? null,
-                            'error_message' => null,
                             'updated_at' => now(),
                         ]);
 
@@ -124,8 +122,14 @@ class SendInvoices extends Command
                 } else {
                     // Handle API failure
                     $errorMessage = $response['message'] ?? 'Unknown API error';
-                    if (isset($response['errors'])) {
-                        $errorMessage .= ' Details: ' . json_encode($response['errors']);
+                    if (isset($response['details'])) {
+                        $errorMessage .= ' Details: ' . json_encode($response['details']);
+                    }
+                    if (isset($response['error_code'])) {
+                        $errorMessage .= ' Error Code: ' . $response['error_code'];
+                    }
+                    if (isset($response['http_status'])) {
+                        $errorMessage .= ' HTTP Status: ' . $response['http_status'];
                     }
 
                     $this->error('Failed to send invoice ID: ' . $invoice->uuid . '. Error: ' . $errorMessage);
@@ -134,7 +138,6 @@ class SendInvoices extends Command
                         'response' => $response
                     ]);
 
-                    $this->markInvoiceAsFailed($invoice->uuid, $errorMessage);
                     $failureCount++;
                 }
             } catch (\Exception $e) {
@@ -146,7 +149,6 @@ class SendInvoices extends Command
                     'trace' => $e->getTraceAsString()
                 ]);
 
-                $this->markInvoiceAsFailed($invoice->uuid, $errorMessage);
                 $failureCount++;
             }
         }
@@ -159,24 +161,5 @@ class SendInvoices extends Command
         ]);
 
         return $failureCount > 0 ? Command::FAILURE : Command::SUCCESS;
-    }
-
-    /**
-     * Mark an invoice as failed in the database with the error message.
-     *
-     * @param string $uuid
-     * @param string $errorMessage
-     * @return void
-     */
-    protected function markInvoiceAsFailed($uuid, $errorMessage)
-    {
-        DB::connection('mysql')
-            ->table('fawtara_01')
-            ->where('uuid', $uuid)
-            ->update([
-                'sent_to_fawtara' => 0,
-                'error_message' => substr($errorMessage, 0, 255), // Limit length to avoid DB errors
-                'updated_at' => now(),
-            ]);
     }
 }

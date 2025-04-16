@@ -20,4 +20,5 @@ yarn-error.log
 /.vscode
 /.zed
 /storage/license.json
-
+active.txt
+database.txt

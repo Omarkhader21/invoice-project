@@ -7,7 +7,8 @@ use Illuminate\Console\Command;
 use App\Services\InvoiceService;
 use Illuminate\Support\Facades\DB;
 use App\Services\InvoiceFileService;
-use App\Services\LicenseService; // Add the LicenseService for validation
+use App\Services\LicenseService;
+use Illuminate\Support\Facades\Log;
 
 class SendInvoices extends Command
 {
@@ -15,77 +16,167 @@ class SendInvoices extends Command
     protected $description = 'Send invoices to the external API.';
     protected $invoiceService;
     protected $invoiceFileService;
-    protected $licenseService; // Add license service
+    protected $licenseService;
     protected $qrcodeService;
 
-    public function __construct(InvoiceService $invoiceService, InvoiceFileService $invoiceFileService, LicenseService $licenseService, QrcodeService $qrcodeService)
-    {
+    public function __construct(
+        InvoiceService $invoiceService,
+        InvoiceFileService $invoiceFileService,
+        LicenseService $licenseService,
+        QrcodeService $qrcodeService
+    ) {
         parent::__construct();
         $this->invoiceService = $invoiceService;
         $this->invoiceFileService = $invoiceFileService;
-        $this->licenseService = $licenseService; // Initialize license service
+        $this->licenseService = $licenseService;
         $this->qrcodeService = $qrcodeService;
     }
 
     public function handle()
     {
-        // ✅ Step 1: Check if the license is valid
+        // Step 1: Check if the license is valid
         if (!$this->licenseService->isValid()) {
             $this->error('Application is locked. Please activate your license.');
-            return Command::FAILURE; // Exit early if license is invalid
+            Log::error('Invoice sending aborted: Invalid license.');
+            return Command::FAILURE;
         }
 
-        // ✅ Step 2: Fetch all invoices that need to be sent
-        $invoices = DB::connection('mysql')->table('fawtara_01')->where('sent_to_fawtara', 0)->get();
+        // Step 2: Fetch all invoices that need to be sent
+        $invoices = DB::connection('mysql')
+            ->table('fawtara_01')
+            ->where('sent_to_fawtara', 0)
+            ->get();
 
         if ($invoices->isEmpty()) {
             $this->info('No invoices to send.');
             return Command::SUCCESS;
         }
 
+        $successCount = 0;
+        $failureCount = 0;
+
         foreach ($invoices as $invoice) {
             try {
                 // Fetch related items
-                $items = DB::connection("mysql")->table("fawtara_02")->where("uuid", $invoice->uuid)->where('invoice_type', $invoice->invoice_type)->get();
+                $items = DB::connection('mysql')
+                    ->table('fawtara_02')
+                    ->where('uuid', $invoice->uuid)
+                    ->where('invoice_type', $invoice->invoice_type)
+                    ->get();
                 $invoice->items = $items;
 
                 // Prepare the XML based on invoice type
-                if ($invoice->invoice_type === '388') { // General Sales Invoice
+                if ($invoice->invoice_type === '388') {
                     $xmlData = $this->invoiceService->generateGeneralSalesInvoiceXml($invoice);
-                } elseif ($invoice->invoice_type === '381') { // Credit Invoice
+                } elseif ($invoice->invoice_type === '381') {
                     $xmlData = $this->invoiceService->generateCreditInvoiceXml($invoice);
                 } else {
-                    $this->error('Failed to send invoice ID: ' . $invoice->uuid . '. Unsupported invoice type.');
+                    $errorMessage = 'Unsupported invoice type: ' . $invoice->invoice_type;
+                    $this->error('Failed to send invoice ID: ' . $invoice->uuid . '. ' . $errorMessage);
+                    Log::error('Invoice ID: ' . $invoice->uuid . ' failed: ' . $errorMessage);
+                    $this->markInvoiceAsFailed($invoice->uuid, $errorMessage);
+                    $failureCount++;
                     continue;
                 }
 
                 // Create a folder and save XML file
                 $folderPath = $this->invoiceFileService->createFolder($invoice->invoice_type);
-                $filePath = $this->invoiceFileService->saveInvoiceXml($xmlData, $folderPath, $invoice->uuid, $invoice->invoice_type, $invoice->invoicetypecode);
+                $filePath = $this->invoiceFileService->saveInvoiceXml(
+                    $xmlData,
+                    $folderPath,
+                    $invoice->uuid,
+                    $invoice->invoice_type,
+                    $invoice->invoicetypecode
+                );
 
                 // Send the XML to the external API
                 $response = $this->invoiceService->sendInvoiceToApi($filePath, $invoice->uuid);
 
-                // Check the API response and update database
+                // Check the API response
                 if ($response['status']) {
-                    $this->info('Invoice ID ' . $invoice->uuid . ' has been sent successfully.');
+                    $this->info('Invoice ID ' . $invoice->uuid . ' sent successfully.');
+                    Log::info('Invoice ID: ' . $invoice->uuid . ' sent successfully.', [
+                        'response' => $response['data']
+                    ]);
 
+                    // Update database with success status
                     DB::connection('mysql')
                         ->table('fawtara_01')
                         ->where('uuid', $invoice->uuid)
-                        ->update(['sent_to_fawtara' => 1, 'qr_code' => $response['data']['EINV_QR']]);
+                        ->update([
+                            'sent_to_fawtara' => 1,
+                            'qr_code' => $response['data']['EINV_QR'] ?? null,
+                            'error_message' => null,
+                            'updated_at' => now(),
+                        ]);
 
-                    DB::connection('mysql')->table('fawtara_02')->where('uuid', $invoice->uuid)->update(['sent_to_fawtara' => 1]);
+                    DB::connection('mysql')
+                        ->table('fawtara_02')
+                        ->where('uuid', $invoice->uuid)
+                        ->update([
+                            'sent_to_fawtara' => 1,
+                            'updated_at' => now(),
+                        ]);
 
+                    // Uncomment if QR code generation is needed
                     // $this->qrcodeService->generateQrCode($invoice->uuid, $response['data']['EINV_QR']);
+                    $successCount++;
                 } else {
-                    $this->error('Failed to send invoice ID ' . $invoice->uuid . '. Error: ' . $response['message']);
+                    // Handle API failure
+                    $errorMessage = $response['message'] ?? 'Unknown API error';
+                    if (isset($response['errors'])) {
+                        $errorMessage .= ' Details: ' . json_encode($response['errors']);
+                    }
+
+                    $this->error('Failed to send invoice ID: ' . $invoice->uuid . '. Error: ' . $errorMessage);
+                    Log::error('Invoice ID: ' . $invoice->uuid . ' failed to send.', [
+                        'error' => $errorMessage,
+                        'response' => $response
+                    ]);
+
+                    $this->markInvoiceAsFailed($invoice->uuid, $errorMessage);
+                    $failureCount++;
                 }
             } catch (\Exception $e) {
-                $this->error('Error sending invoice ID ' . $invoice->uuid . ': ' . $e->getMessage());
+                // Handle unexpected exceptions
+                $errorMessage = 'Unexpected error: ' . $e->getMessage();
+                $this->error('Error sending invoice ID: ' . $invoice->uuid . ': ' . $errorMessage);
+                Log::error('Invoice ID: ' . $invoice->uuid . ' encountered an error.', [
+                    'exception' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                $this->markInvoiceAsFailed($invoice->uuid, $errorMessage);
+                $failureCount++;
             }
         }
 
-        return Command::SUCCESS;
+        // Summary of processing
+        $this->info("Processing complete. Successfully sent: {$successCount}, Failed: {$failureCount}");
+        Log::info('Invoice sending completed.', [
+            'successful' => $successCount,
+            'failed' => $failureCount
+        ]);
+
+        return $failureCount > 0 ? Command::FAILURE : Command::SUCCESS;
+    }
+
+    /**
+     * Mark an invoice as failed in the database with the error message.
+     *
+     * @param string $uuid
+     * @param string $errorMessage
+     * @return void
+     */
+    protected function markInvoiceAsFailed($uuid, $errorMessage)
+    {
+        DB::connection('mysql')
+            ->table('fawtara_01')
+            ->where('uuid', $uuid)
+            ->update([
+                'sent_to_fawtara' => 0,
+                'error_message' => substr($errorMessage, 0, 255), // Limit length to avoid DB errors
+                'updated_at' => now(),
+            ]);
     }
 }

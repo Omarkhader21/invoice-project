@@ -8,7 +8,12 @@ use Exception;
 
 class QrcodeService
 {
-    protected $basePath = 'D:\qr_codes'; // Define the base path for QR code storage
+    protected $basePath; // Define the base path for QR code storage
+
+    public function __construct()
+    {
+        $this->basePath = storage_path('app/invoices'); // Store in storage/app/invoices
+    }
 
     public function createFolder(): string
     {
@@ -29,18 +34,18 @@ class QrcodeService
             File::makeDirectory($folderPath, 0755, true);
         }
 
-        $pngFileName = "qrcode_{$id}.png";
-        $pngFilePath = "{$folderPath}/{$pngFileName}";
+        $svgFileName = "qrcode_{$id}.svg";
+        $svgFilePath = "{$folderPath}/{$svgFileName}";
 
-        // Save the QR code content as PNG
+        // Save the QR code content as SVG
         try {
-            file_put_contents($pngFilePath, $qrcode);
+            file_put_contents($svgFilePath, $qrcode);
         } catch (Exception $e) {
-            throw new Exception("Failed to save QR code PNG: {$e->getMessage()}");
+            throw new Exception("Failed to save QR code SVG: {$e->getMessage()}");
         }
 
         return [
-            'png' => $pngFilePath,
+            'svg' => $svgFilePath,
         ];
     }
 
@@ -48,13 +53,13 @@ class QrcodeService
     {
         $folderPath = $this->createFolder();
 
-        // Generate the QR code directly from the provided text (e.g., EINV_QR Base64 data) in PNG format
-        $qrcode = QrCode::format('png')
+        // Generate the QR code directly from the provided text (e.g., EINV_QR Base64 data) in SVG format
+        $qrcode = QrCode::format('svg')
             ->size(500)
             ->generate($text);
 
         $filePaths = $this->saveQrcode($qrcode, $folderPath, $id);
 
-        return $filePaths['png']; // Return PNG path
+        return $filePaths['svg']; // Return SVG path
     }
 }

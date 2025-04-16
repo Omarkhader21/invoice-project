@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use Spatie\ArrayToXml\ArrayToXml;
+use Illuminate\Support\Facades\File;
 
 class InvoiceXmlService extends InvoiceService
 {
@@ -34,7 +35,7 @@ class InvoiceXmlService extends InvoiceService
                         'cac:TaxScheme' => ['cbc:ID' => 'VAT'],
                     ],
                     'cac:PartyLegalEntity' => [
-                        'cbc:RegistrationName' => $invoiceData->registrationname,
+                        'cbc:RegistrationName' => $this->getCompanyInfo()->suppliername,
                     ],
                 ],
             ],
@@ -219,7 +220,7 @@ class InvoiceXmlService extends InvoiceService
                         'cac:TaxScheme' => ['cbc:ID' => 'VAT'],
                     ],
                     'cac:PartyLegalEntity' => [
-                        'cbc:RegistrationName' => $invoiceData->registrationname,
+                        'cbc:RegistrationName' => $this->getCompanyInfo()->suppliername,
                     ],
                 ],
             ],
@@ -412,14 +413,48 @@ class InvoiceXmlService extends InvoiceService
 
     protected function generateInvoiceNumber()
     {
-        // Get the last invoice number from the database (assume the table name is invoices)
-        $lastInvoice = DB::connection('mysql')->table('fawtara_01')->count();
+        $basePath = storage_path('app/invoices');
+        $invoiceCount = 0;
 
-        // If there's no invoice, start the counter at 1
-        $nextInvoiceNumber = $lastInvoice ? $lastInvoice + 1 : 1;
+        // Check if the invoices directory exists
+        if (!File::exists($basePath)) {
+            return 1; // Start with 1 if no invoices exist
+        }
 
-        // Return the updated UUID
-        return $nextInvoiceNumber;
+        // Get all year directories
+        $yearFolders = File::directories($basePath);
+        foreach ($yearFolders as $yearFolder) {
+            // Check general sales invoices
+            $generalSalesPath = $yearFolder . '/general_sales';
+            if (File::exists($generalSalesPath)) {
+                // Count files in cash_sales and credit_sales subfolders
+                $cashSalesPath = $generalSalesPath . '/cash_sales';
+                $creditSalesPath = $generalSalesPath . '/credit_sales';
+                if (File::exists($cashSalesPath)) {
+                    $invoiceCount += count(File::glob($cashSalesPath . '/*.xml'));
+                }
+                if (File::exists($creditSalesPath)) {
+                    $invoiceCount += count(File::glob($creditSalesPath . '/*.xml'));
+                }
+            }
+
+            // Check return invoices
+            $returnInvoicesPath = $yearFolder . '/return_invoices';
+            if (File::exists($returnInvoicesPath)) {
+                // Count files in cash_sales and credit_sales subfolders
+                $cashSalesPath = $returnInvoicesPath . '/cash_sales';
+                $creditSalesPath = $returnInvoicesPath . '/credit_sales';
+                if (File::exists($cashSalesPath)) {
+                    $invoiceCount += count(File::glob($cashSalesPath . '/*.xml'));
+                }
+                if (File::exists($creditSalesPath)) {
+                    $invoiceCount += count(File::glob($creditSalesPath . '/*.xml'));
+                }
+            }
+        }
+
+        // Return the next invoice number
+        return $invoiceCount + 1;
     }
 
     protected function getCompanyInfo()
@@ -427,47 +462,5 @@ class InvoiceXmlService extends InvoiceService
         $companyInfo = DB::connection('mysql')->table('fawtara_00')->first();
 
         return $companyInfo;
-    }
-
-    /**
-     * Calculate tax category and percentage.
-     *
-     * @param object $item
-     * @return array
-     */
-    public function calculateTax($item)
-    {
-        // النسبة الافتراضية للضريبة (الضريبة القياسية)
-        $taxCategory = 'S';  // الفئة الافتراضية هي "S" للضريبة القياسية
-        $taxPercent = $item->percent;  // النسبة الافتراضية للضريبة (مثال: 0.16 -> 16%)
-
-        // تطبيق النسب المحددة
-        $validTaxPercentages = [0, 1, 2, 3, 4, 5, 7, 8, 10, 16]; // النسب المتاحة
-        $roundedTaxPercent = $item->percent; // تقريب النسبة إلى أقرب عدد صحيح
-
-        // تحقق مما إذا كانت النسبة المدخلة موجودة في النسب المعتمدة
-        if (in_array($roundedTaxPercent, $validTaxPercentages)) {
-            $taxPercent = $roundedTaxPercent;
-        } else {
-            // إذا كانت النسبة غير معتمدة، قم بتعيينها إلى 0% أو أي قيمة أخرى مناسبة
-            $taxPercent = 0;
-            $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
-        }
-
-        // خاصة للحالات التي فيها النسبة 0.000 أو قريبة منها
-        if ($item->taxamount == 0 || $taxPercent == 0) {
-            $taxCategory = 'O'; // فئة ضريبة "O" تعني لا ضريبة
-            $taxPercent = 0;     // تعيين النسبة إلى 0%
-        }
-
-        // إذا كانت النسبة أكبر من 0 وأقل من 1، تعيينها إلى 1
-        if ($taxPercent > 0 && $taxPercent < 1) {
-            $taxPercent = 1;
-        }
-
-        return [
-            'taxCategory' => $taxCategory,
-            'taxPercent' => $item->percent
-        ];
     }
 }

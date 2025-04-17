@@ -105,7 +105,6 @@ class SendInvoices extends Command
                         ->update([
                             'sent_to_fawtara' => 1,
                             'qr_code' => $response['data']['EINV_QR'] ?? null,
-                            'updated_at' => now(),
                         ]);
 
                     DB::connection('mysql')
@@ -113,7 +112,6 @@ class SendInvoices extends Command
                         ->where('uuid', $invoice->uuid)
                         ->update([
                             'sent_to_fawtara' => 1,
-                            'updated_at' => now(),
                         ]);
 
                     // Uncomment if QR code generation is needed

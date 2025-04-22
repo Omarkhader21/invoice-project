@@ -269,7 +269,7 @@ class InvoiceXmlService extends InvoiceService
             'cac:TaxTotal' => [ // تفاصيل الضرائب
                 'cbc:TaxAmount' => [
                     '_attributes' => ['currencyID' => 'JOD'], // عملة الضريبة
-                    '_value' => $invoiceData->taxamount, // مجموع قيم الضريبة المراد إرجاعها
+                    '_value' => sprintf("%.9f", $invoiceData->taxamount), // مجموع قيم الضريبة المراد إرجاعها
                 ],
                 'cac:TaxSubtotal' => $invoiceData->items->map(function ($item) {
                     return [

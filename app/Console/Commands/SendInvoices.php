@@ -86,12 +86,10 @@ class SendInvoices extends Command
                         }
                         break;
                     case 'income':
-                        if ($invoice->invoice_type === '389') {
-                            $xmlData = $this->incomeInvoiceService->generateIncomeInvoiceXml($invoice);
-                        } elseif ($invoice->invoice_type === '388') {
-                            $xmlData = $this->incomeInvoiceService->generateIncomeInvoiceXml($invoice);
+                        if ($invoice->invoice_type === '388') {
+                            $xmlData = $this->salesInvoiceService->generateGeneralSalesInvoiceXml($invoice);
                         } elseif ($invoice->invoice_type === '381') {
-                            $xmlData = $this->incomeInvoiceService->generateIncomeInvoiceXml($invoice);
+                            $xmlData = $this->salesInvoiceService->generateCreditInvoiceXml($invoice);
                         }
                         break;
                     default:

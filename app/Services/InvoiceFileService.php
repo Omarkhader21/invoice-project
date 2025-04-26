@@ -4,49 +4,74 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Config;
 
 class InvoiceFileService
 {
-    // Create a folder based on the invoice type if it doesn't exist inside app/storage
+    // Create a folder based on the invoice mode and type inside app/storage
     public function createFolder($invoiceType)
     {
         // Get the current year
         $currentYear = date('Y');
 
-        // Define the parent folder path (year-based)
-        $yearFolderPath = storage_path('app/invoices/' . $currentYear);
+        // Get the invoice mode from configuration
+        $invoiceMode = config('app.invoice_type');
 
-        // Check if the year folder exists, if not, create it
-        if (!File::exists($yearFolderPath)) {
-            File::makeDirectory($yearFolderPath, 0755, true);  // Create the directory with the right permissions
+        // Validate invoice mode
+        if (!in_array($invoiceMode, ['sales', 'income'])) {
+            return false; // Invalid invoice mode
         }
 
-        // Return the path to the year folder
-        return $yearFolderPath;
+        // Define the parent folder path (year and mode-based)
+        $baseFolderPath = storage_path("app/invoices/{$currentYear}/{$invoiceMode}");
+
+        // Check if the base folder exists, if not, create it
+        if (!File::exists($baseFolderPath)) {
+            File::makeDirectory($baseFolderPath, 0755, true); // Create the directory with the right permissions
+        }
+
+        // Return the path to the mode folder
+        return $baseFolderPath;
     }
 
     // Save the XML file to the respective folder inside app/storage
-    public function saveInvoiceXml($xml, $yearFolderPath, $id, $invoiceType, $invoicetypecode)
+    public function saveInvoiceXml($xml, $baseFolderPath, $id, $invoiceType, $invoicetypecode)
     {
-        // Define base folder based on invoice type
-        switch ($invoiceType) {
-            case '388':
-                $baseFolder = 'general_sales'; // General Sales Invoices
-                $filePrefix = 'general_sale_invoice';
+        // Define base folder and file prefix based on config('app.invoice_type') and invoice type
+        $invoiceMode = config('app.invoice_type');
+
+        switch ($invoiceMode) {
+            case 'sales':
+                if ($invoiceType === '388') {
+                    $typeFolder = 'general_sales'; // General Sales Invoices
+                    $filePrefix = 'general_sale_invoice';
+                } elseif ($invoiceType === '381') {
+                    $typeFolder = 'return_sales_invoices'; // Return Sales Invoices
+                    $filePrefix = 'return_sales_invoice';
+                } else {
+                    return false; // Invalid invoice type for sales mode
+                }
                 break;
-            case '381':
-                $baseFolder = 'return_invoices'; // Return Invoices
-                $filePrefix = 'return_invoice';
+            case 'income':
+                if ($invoiceType === '388') {
+                    $typeFolder = 'general_income'; // General Income Invoices
+                    $filePrefix = 'general_income_invoice';
+                } elseif ($invoiceType === '381') {
+                    $typeFolder = 'return_income_invoices'; // Return Income Invoices
+                    $filePrefix = 'return_income_invoice';
+                } else {
+                    return false; // Invalid invoice type for income mode
+                }
                 break;
             default:
-                return false; // Invalid invoice type
+                return false; // Invalid invoice mode
         }
 
         // Define subfolder based on subtype
         $subFolder = ($invoicetypecode === '022') ? 'cash_sales' : 'credit_sales';
 
         // Construct the full folder path
-        $folderPath = "{$yearFolderPath}/{$baseFolder}/{$subFolder}";
+        $folderPath = "{$baseFolderPath}/{$typeFolder}/{$subFolder}";
 
         // Ensure the folder exists
         if (!File::exists($folderPath)) {

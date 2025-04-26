@@ -3,29 +3,38 @@
 namespace App\Console\Commands;
 
 use App\Services\QrcodeService;
-use Illuminate\Console\Command;
 use App\Services\InvoiceService;
-use Illuminate\Support\Facades\DB;
 use App\Services\InvoiceFileService;
 use App\Services\LicenseService;
+use App\Services\SalesInvoiceXmlService;
+use App\Services\IncomeInvoiceXmlService;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Config;
 
 class SendInvoices extends Command
 {
     protected $signature = 'send:invoices';
     protected $description = 'Send invoices to the external API.';
+    protected $salesInvoiceService;
+    protected $incomeInvoiceService;
     protected $invoiceService;
     protected $invoiceFileService;
     protected $licenseService;
     protected $qrcodeService;
 
     public function __construct(
+        SalesInvoiceXmlService $salesInvoiceService,
+        IncomeInvoiceXmlService $incomeInvoiceService,
         InvoiceService $invoiceService,
         InvoiceFileService $invoiceFileService,
         LicenseService $licenseService,
         QrcodeService $qrcodeService
     ) {
         parent::__construct();
+        $this->salesInvoiceService = $salesInvoiceService;
+        $this->incomeInvoiceService = $incomeInvoiceService;
         $this->invoiceService = $invoiceService;
         $this->invoiceFileService = $invoiceFileService;
         $this->licenseService = $licenseService;
@@ -54,6 +63,7 @@ class SendInvoices extends Command
 
         $successCount = 0;
         $failureCount = 0;
+        $invoiceMode = config('app.invoice_type');
 
         foreach ($invoices as $invoice) {
             try {
@@ -65,21 +75,51 @@ class SendInvoices extends Command
                     ->get();
                 $invoice->items = $items;
 
-                // Prepare the XML based on invoice type
-                if ($invoice->invoice_type === '388') {
-                    $xmlData = $this->invoiceService->generateGeneralSalesInvoiceXml($invoice);
-                } elseif ($invoice->invoice_type === '381') {
-                    $xmlData = $this->invoiceService->generateCreditInvoiceXml($invoice);
-                } else {
-                    $errorMessage = 'Unsupported invoice type: ' . $invoice->invoice_type;
-                    $this->error('Failed to send invoice ID: ' . $invoice->uuid . '. ' . $errorMessage);
-                    Log::error('Invoice ID: ' . $invoice->uuid . ' failed: ' . $errorMessage);
+                // Prepare the XML based on invoice mode and type
+                $xmlData = null;
+                switch ($invoiceMode) {
+                    case 'sales':
+                        if ($invoice->invoice_type === '388') {
+                            $xmlData = $this->salesInvoiceService->generateGeneralSalesInvoiceXml($invoice);
+                        } elseif ($invoice->invoice_type === '381') {
+                            $xmlData = $this->salesInvoiceService->generateCreditInvoiceXml($invoice);
+                        }
+                        break;
+                    case 'income':
+                        if ($invoice->invoice_type === '389') {
+                            $xmlData = $this->incomeInvoiceService->generateIncomeInvoiceXml($invoice);
+                        } elseif ($invoice->invoice_type === '388') {
+                            $xmlData = $this->incomeInvoiceService->generateIncomeInvoiceXml($invoice);
+                        } elseif ($invoice->invoice_type === '381') {
+                            $xmlData = $this->incomeInvoiceService->generateIncomeInvoiceXml($invoice);
+                        }
+                        break;
+                    default:
+                        $errorMessage = "Unsupported invoice mode: {$invoiceMode}";
+                        $this->error("Failed to send invoice ID: {$invoice->uuid}. {$errorMessage}");
+                        Log::error("Invoice ID: {$invoice->uuid} failed: {$errorMessage}");
+                        $failureCount++;
+                        continue 2; // Skip to next invoice
+                }
+
+                if ($xmlData === null) {
+                    $errorMessage = "Invalid or unsupported invoice type: {$invoice->invoice_type} for mode {$invoiceMode}";
+                    $this->error("Failed to send invoice ID: {$invoice->uuid}. {$errorMessage}");
+                    Log::error("Invoice ID: {$invoice->uuid} failed: {$errorMessage}");
                     $failureCount++;
                     continue;
                 }
 
                 // Create a folder and save XML file
                 $folderPath = $this->invoiceFileService->createFolder($invoice->invoice_type);
+                if ($folderPath === false) {
+                    $errorMessage = "Failed to create folder for invoice type: {$invoice->invoice_type}";
+                    $this->error("Failed to send invoice ID: {$invoice->uuid}. {$errorMessage}");
+                    Log::error("Invoice ID: {$invoice->uuid} failed: {$errorMessage}");
+                    $failureCount++;
+                    continue;
+                }
+
                 $filePath = $this->invoiceFileService->saveInvoiceXml(
                     $xmlData,
                     $folderPath,
@@ -87,14 +127,21 @@ class SendInvoices extends Command
                     $invoice->invoice_type,
                     $invoice->invoicetypecode
                 );
+                if ($filePath === false) {
+                    $errorMessage = "Failed to save XML for invoice type: {$invoice->invoice_type}";
+                    $this->error("Failed to send invoice ID: {$invoice->uuid}. {$errorMessage}");
+                    Log::error("Invoice ID: {$invoice->uuid} failed: {$errorMessage}");
+                    $failureCount++;
+                    continue;
+                }
 
                 // Send the XML to the external API
                 $response = $this->invoiceService->sendInvoiceToApi($filePath, $invoice->uuid);
 
                 // Check the API response
                 if ($response['status']) {
-                    $this->info('Invoice ID ' . $invoice->uuid . ' sent successfully.');
-                    Log::info('Invoice ID: ' . $invoice->uuid . ' sent successfully.', [
+                    $this->info("Invoice ID {$invoice->uuid} sent successfully.");
+                    Log::info("Invoice ID: {$invoice->uuid} sent successfully.", [
                         'response' => $response['data']
                     ]);
 
@@ -130,8 +177,8 @@ class SendInvoices extends Command
                         $errorMessage .= ' HTTP Status: ' . $response['http_status'];
                     }
 
-                    $this->error('Failed to send invoice ID: ' . $invoice->uuid . '. Error: ' . $errorMessage);
-                    Log::error('Invoice ID: ' . $invoice->uuid . ' failed to send.', [
+                    $this->error("Failed to send invoice ID: {$invoice->uuid}. Error: {$errorMessage}");
+                    Log::error("Invoice ID: {$invoice->uuid} failed to send.", [
                         'error' => $errorMessage,
                         'response' => $response
                     ]);
@@ -141,8 +188,8 @@ class SendInvoices extends Command
             } catch (\Exception $e) {
                 // Handle unexpected exceptions
                 $errorMessage = 'Unexpected error: ' . $e->getMessage();
-                $this->error('Error sending invoice ID: ' . $invoice->uuid . ': ' . $errorMessage);
-                Log::error('Invoice ID: ' . $invoice->uuid . ' encountered an error.', [
+                $this->error("Error sending invoice ID: {$invoice->uuid}: {$errorMessage}");
+                Log::error("Invoice ID: {$invoice->uuid} encountered an error.", [
                     'exception' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
